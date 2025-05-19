@@ -1,43 +1,68 @@
 /*
- * main.c              Copyright NXP 2017
- * Description:  Simple program to exercise GPIO
- * 2017 July 14 S Mihalik/ O Romero / Agustin Diaz - initial version
- *	S32K148 EVB
+ * Copyright 2020 NXP
+ * All rights reserved.
+ *
+ * NXP Confidential. This software is owned or controlled by NXP and may only be
+ * used strictly in accordance with the applicable license terms. By expressly
+ * accepting such terms or by downloading, installing, activating and/or otherwise
+ * using the software, you are agreeing that you have read, and that you agree to
+ * comply with and are bound by, such license terms. If you do not agree to be
+ * bound by the applicable license terms, then you may not retain, install,
+ * activate or otherwise use the software. The production use license in
+ * Section 2.3 is expressly granted for this software.
  */
 
-#include "S32K148.h"    /* include peripheral declarations S32K148 */
+#include "clock_manager.h"
+#include "pins_driver.h"
+/* This example is setup to work by default with EVB. To use it with other boards
+   please comment the following line
+*/
 
-#define PTE23   23      /* Port PTE23, bit 0: EVB output to blue LED */
-#define PTC12   12      /* Port PTC12, bit 12: FRDM EVB input from BTN0 [SW2] */
+#define EVB
 
-void WDOG_disable (void){
-    WDOG->CNT=0xD928C520;    /*Unlock watchdog*/
-    WDOG->TOVAL=0x0000FFFF;  /*Maximum timeout value*/
-    WDOG->CS = 0x00002100;   /*Disable watchdog*/
+#ifdef EVB
+	#define LED_PORT 	PORTE
+	#define GPIO_PORT	PTE
+	#define PCC_CLOCK	PORTE_CLK
+	#define LED1		21U
+	#define LED2		22U
+#else
+	#define LED_PORT 	PORTC
+	#define GPIO_PORT	PTC
+	#define PCC_CLOCK	PORTC_CLK
+	#define LED1		0U
+	#define LED2		1U
+#endif
+
+void delay(volatile int cycles);
+
+int main(void)
+{
+  /* Configure clocks for PORT */
+  CLOCK_DRV_SetModuleClock(PCC_CLOCK, NULL);
+  /* Set pins as GPIO */
+  PINS_DRV_SetMuxModeSel(LED_PORT, LED1, PORT_MUX_AS_GPIO);
+  PINS_DRV_SetMuxModeSel(LED_PORT, LED2, PORT_MUX_AS_GPIO);
+
+  /* Output direction for LED0 & LED1 */
+  PINS_DRV_SetPinsDirection(GPIO_PORT, ((1 << LED1) | (1 << LED2)));
+
+  /* Set Output value LED0 & LED1 */
+  PINS_DRV_SetPins(GPIO_PORT, 1 << LED1);
+  PINS_DRV_ClearPins(GPIO_PORT, 1 << LED2);
+
+  for (;;)
+  {
+      /* Insert a small delay to make the blinking visible */
+      delay(720000);
+
+      /* Toggle output value LED0 & LED1 */
+      PINS_DRV_TogglePins(GPIO_PORT, ((1 << LED1) | (1 << LED2)));
+  }
 }
 
-int main(void) {
-    int counter = 0;
-    WDOG_disable();             /* Disable Watchdog in case it is not done in startup code */
-    /* Enable clocks to peripherals (PORT modules) */
-    PCC-> PCCn[PCC_PORTC_INDEX] = PCC_PCCn_CGC_MASK; /* Enable clock to PORT C */
-    PCC-> PCCn[PCC_PORTE_INDEX] = PCC_PCCn_CGC_MASK; /* Enable clock to PORT E */
-    /* Configure port C12 as GPIO input (BTN 0 [SW2] on EVB) */
-    PTC->PDDR &= ~(1<<PTC12);    /* Port C12: Data Direction= input (default) */
-
-    PORTC->PCR[12] |= PORT_PCR_PFE_MASK; /* Port C12: MUX = GPIO, input filter enabled */
-    PORTC->PCR[12] |= PORT_PCR_MUX(0b001); /* Port C12: MUX = GPIO, input filter enabled */
-    /* Configure port E23 as GPIO output (LED on EVB) */
-    PTE->PDDR |= 1<<PTE23;        /* Port PTE23: Data Direction= output */
-    PORTE->PCR[23] = 0x00000100;  /* Port PTE23: MUX = GPIO */
-
-    for(;;) {
-        if (PTC->PDIR & (1<<PTC12)) {   /* If Pad Data Input = 1 (BTN0 [SW2] pushed) */
-            PTE-> PSOR |= 1<<PTE23;        /* Set Output on port E23 (LED on) */
-        }
-        else {                          /* If BTN0 was not pushed */
-            PTE-> PCOR |= 1<<PTE23;        /* Clear Output on port E23 (LED off) */
-        }
-        counter++;
-    }
+void delay(volatile int cycles)
+{
+    /* Delay function - do nothing for a number of cycles */
+    while(cycles--);
 }

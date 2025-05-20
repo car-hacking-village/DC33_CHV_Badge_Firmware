@@ -1,14 +1,15 @@
 cmake_minimum_required(VERSION 3.10)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR arm)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-project(dc33_fw_s32k148 C ASM)
+project(dc33_fw_s32k148 C CXX ASM)
 
 add_executable(
   dc33_fw_s32k148
-  main.c
+  main.cpp
   "$ENV{NXP_SDK}/platform/devices/S32K148/startup/system_S32K148.c"
   "$ENV{NXP_SDK}/platform/devices/startup.c"
   "$ENV{NXP_SDK}/platform/drivers/src/pins/pins_driver.c"
@@ -55,7 +56,9 @@ target_compile_options(
   -ffunction-sections
   -fdata-sections
   -fno-jump-tables
-  -std=gnu99
+  -fno-exceptions
+  $<$<COMPILE_LANGUAGE:C>:-std=gnu99>
+  $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++23>
   -save-temps=obj
   -ggdb
   -DCPU_S32K148

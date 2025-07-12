@@ -10,6 +10,9 @@ project(dc33_fw_s32k148 C CXX ASM)
 add_executable(
   dc33_fw_s32k148
   main.c
+  LPSPI.c
+  LPUART.c
+  clocks_and_modes.c
   startup.c
   startup_S32K148.S
   system_S32K148.c

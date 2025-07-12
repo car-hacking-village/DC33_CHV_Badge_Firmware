@@ -32,17 +32,51 @@
 
 /*!
  * Description:
- * =====================================================================
- * This short project is a starting point to learn GPIO.
- * An input is polled to detect a high or low level. An output is set
- * depending on input state. If running code on the S32K14x evaluation
- * board, pressing button 0 lights up the blue LED.
- */
+ * ==========================================================================================
+ * This example performs a simple UART transfer to a COM port on a PC. FIFOs, interrupts and
+ * DMA are not implemented. The Open SDA interface can be used on the evaluation board, where 
+ * the UART signals are transferred to a USB interface, which can connect to a PC which has a 
+ * terminal emulation program such as PUTTY, TeraTerm or other software.
+ * */
 
-#include "device_registers.h"
+#include "S32K148.h"
+#include "device_registers.h" /* include peripheral declarations S32K144 */
+#include "clocks_and_modes.h"
+#include "LPSPI.h"
+#include "LPUART.h"
 
-#define PTE23 (23)
-#define PTC12 (12)
+char data=0;
+void PORT_init (void)
+{
+	/*!
+	 * Pins definitions
+	 * ===================================================
+	 *
+	 * Pin number        | Function
+	 * ----------------- |------------------
+	 * PTC6              | UART1 RX
+	 * PTC7              | UART1 TX
+	 */
+  PCC->PCCn[PCC_PORTC_INDEX]|=PCC_PCCn_CGC_MASK; /* Enable clock for PORTC */
+  PORTC->PCR[6]|=PORT_PCR_MUX(2);	/* Port C6: MUX = ALT2, UART1 RX */
+  PORTC->PCR[7]|=PORT_PCR_MUX(2);   /* Port C7: MUX = ALT2, UART1 TX */
+	/*!
+	 * Pins definitions
+	 * ===================================================
+	 *
+	 * Pin number        | Function
+	 * ----------------- |------------------
+	 * PTB0              | LPSPI0_PCS0
+	 * PTB1              | LPSPI0_SOUT
+	 * PTB2              | LPSPI0_SCK
+	 * PTB3              | LPSPI0_SIN
+	 */
+	  PCC->PCCn[PCC_PORTB_INDEX]|=PCC_PCCn_CGC_MASK; /* Enable clock for PORTB */
+	  PORTB->PCR[0]|=PORT_PCR_MUX(3); /* Port B0: MUX = ALT3, LPSPI0_PCS0 */
+	  PORTB->PCR[1]|=PORT_PCR_MUX(3); /* Port B1: MUX = ALT3, LPSPI0_SOUT */
+	  PORTB->PCR[2]|=PORT_PCR_MUX(3); /* Port B2: MUX = ALT3, LPSPI0_SCK */
+	  PORTB->PCR[3]|=PORT_PCR_MUX(3); /* Port B3: MUX = ALT3, LPSPI0_SIN */
+}
 
 void WDOG_disable (void)
 {
@@ -53,56 +87,36 @@ void WDOG_disable (void)
 
 int main(void)
 {
-	int counter = 0;
-
 	/*!
-	 * Pins definitions
-	 * ===================================================
-	 *
-	 * Pin number        | Function
-	 * ----------------- |------------------
-	 * PTE23             | GPIO [BLUE LED]
-	 * PTC12             | GPIO [SW2]
+	 * Initialization:
+	 * =======================
 	 */
+  WDOG_disable();        /* Disable WDOG */
+  SOSC_init_8MHz();      /* Initialize system oscilator for 8 MHz xtal */
+  SPLL_init_160MHz();    /* Initialize SPLL to 160 MHz with 8 MHz SOSC */
+  NormalRUNmode_80MHz(); /* Init clocks: 80 MHz sysclk & core, 40 MHz bus, 20 MHz flash */
+  PORT_init();           /* Configure ports */
 
-	/*!
-	 * Initialization
-	 * ===================================================
-	 */
-	WDOG_disable();	/* Disable Watchdog in case it is not done in startup code */
-
-	/* Enable clocks to peripherals (PORT modules) */
-	PCC-> PCCn[PCC_PORTC_INDEX] = PCC_PCCn_CGC_MASK;	/* Enable clock to PORT C */
-	PCC-> PCCn[PCC_PORTE_INDEX] = PCC_PCCn_CGC_MASK;	/* Enable clock to PORT E */
-
-
-	/* Configure port C12 as GPIO input (BTN 0 [SW3] on EVB) */
-	PTC->PDDR &= ~(1<<PTC12);   			/* Port C12: Data Direction= input (default) */
-	PORTC->PCR[PTC12] = PORT_PCR_MUX(1)
-					   |PORT_PCR_PFE_MASK; 	/* Port C12: MUX = GPIO, input filter enabled */
-
-	/* Configure port E23 as GPIO output (LED on EVB) */
-	PTE->PDDR |= 1<<PTE23;       			/* Port E23: Data Direction= output */
-	PORTE->PCR[PTE23] = PORT_PCR_MUX(1); 	/* Port E23: MUX = GPIO */
+  LPUART1_init();        /* Initialize LPUART @ 9600*/
+  LPUART1_transmit_string("Running LPUART example\n\r");     /* Transmit char string */
+  LPUART1_transmit_string("Input character to echo...\n\r"); /* Transmit char string */
+  LPSPI0_init_master();
 
 	/*!
 	 * Infinite for:
 	 * ========================
 	 */
-		for(;;)
-		{
-			if (PTC->PDIR & (1<<PTC12)) {	 /* - If Pad Data Input = 1 (BTN0 [SW3] pushed)*/
-				PTE-> PSOR |= 1<<PTE23;		 /*		Set Output on port E23 (LED on)*/
-			}
-			else {							 /* - If BTN0 was not pushed */
-				PTE-> PCOR |= 1<<PTE23;      /*		Clear Output on port E23 (LED off) */
-			}
-
-		counter++;
-		}
+	  for(;;)
+	  {
+		  LPUART1_transmit_char('>');  		/* Transmit prompt character*/
+		  uint16_t c = LPUART1_receive_and_echo_char();	/* Wait for input char, receive & echo it*/
+      c = (c << 8) | c;
+      LPSPI0_transmit_16bits(c);
+      (void)LPSPI0_receive_16bits();
+	  }
 }
 
 void _exit(int code) {
-	(void)code;
-	for (;;);
+  (void)code;
+  for (;;);
 }

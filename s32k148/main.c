@@ -1,68 +1,108 @@
 /*
- * Copyright 2020 NXP
+ * Copyright (c) 2014 - 2016, Freescale Semiconductor, Inc.
+ * Copyright (c) 2016 - 2018, NXP.
  * All rights reserved.
  *
- * NXP Confidential. This software is owned or controlled by NXP and may only be
- * used strictly in accordance with the applicable license terms. By expressly
- * accepting such terms or by downloading, installing, activating and/or otherwise
- * using the software, you are agreeing that you have read, and that you agree to
- * comply with and are bound by, such license terms. If you do not agree to be
- * bound by the applicable license terms, then you may not retain, install,
- * activate or otherwise use the software. The production use license in
- * Section 2.3 is expressly granted for this software.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY NXP "AS IS" AND ANY EXPRESSED OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL NXP OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+ * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "clock_manager.h"
-#include "pins_driver.h"
-/* This example is setup to work by default with EVB. To use it with other boards
-   please comment the following line
-*/
+/*!
+ * Description:
+ * =====================================================================
+ * This short project is a starting point to learn GPIO.
+ * An input is polled to detect a high or low level. An output is set
+ * depending on input state. If running code on the S32K14x evaluation
+ * board, pressing button 0 lights up the blue LED.
+ */
 
-#define EVB
+#include "device_registers.h"
 
-#ifdef EVB
-	#define LED_PORT 	PORTE
-	#define GPIO_PORT	PTE
-	#define PCC_CLOCK	PORTE_CLK
-	#define LED1		21U
-	#define LED2		22U
-#else
-	#define LED_PORT 	PORTC
-	#define GPIO_PORT	PTC
-	#define PCC_CLOCK	PORTC_CLK
-	#define LED1		0U
-	#define LED2		1U
-#endif
+#define PTE23 (23)
+#define PTC12 (12)
 
-void delay(volatile int cycles);
+void WDOG_disable (void)
+{
+  WDOG->CNT=0xD928C520;     /* Unlock watchdog 		*/
+  WDOG->TOVAL=0x0000FFFF;   /* Maximum timeout value 	*/
+  WDOG->CS = 0x00002100;    /* Disable watchdog 		*/
+}
 
 int main(void)
 {
-  /* Configure clocks for PORT */
-  CLOCK_DRV_SetModuleClock(PCC_CLOCK, NULL);
-  /* Set pins as GPIO */
-  PINS_DRV_SetMuxModeSel(LED_PORT, LED1, PORT_MUX_AS_GPIO);
-  PINS_DRV_SetMuxModeSel(LED_PORT, LED2, PORT_MUX_AS_GPIO);
+	int counter = 0;
 
-  /* Output direction for LED0 & LED1 */
-  PINS_DRV_SetPinsDirection(GPIO_PORT, ((1 << LED1) | (1 << LED2)));
+	/*!
+	 * Pins definitions
+	 * ===================================================
+	 *
+	 * Pin number        | Function
+	 * ----------------- |------------------
+	 * PTE23             | GPIO [BLUE LED]
+	 * PTC12             | GPIO [SW2]
+	 */
 
-  /* Set Output value LED0 & LED1 */
-  PINS_DRV_SetPins(GPIO_PORT, 1 << LED1);
-  PINS_DRV_ClearPins(GPIO_PORT, 1 << LED2);
+	/*!
+	 * Initialization
+	 * ===================================================
+	 */
+	WDOG_disable();	/* Disable Watchdog in case it is not done in startup code */
 
-  for (;;)
-  {
-      /* Insert a small delay to make the blinking visible */
-      delay(720000);
+	/* Enable clocks to peripherals (PORT modules) */
+	PCC-> PCCn[PCC_PORTC_INDEX] = PCC_PCCn_CGC_MASK;	/* Enable clock to PORT C */
+	PCC-> PCCn[PCC_PORTE_INDEX] = PCC_PCCn_CGC_MASK;	/* Enable clock to PORT E */
 
-      /* Toggle output value LED0 & LED1 */
-      PINS_DRV_TogglePins(GPIO_PORT, ((1 << LED1) | (1 << LED2)));
-  }
+
+	/* Configure port C12 as GPIO input (BTN 0 [SW3] on EVB) */
+	PTC->PDDR &= ~(1<<PTC12);   			/* Port C12: Data Direction= input (default) */
+	PORTC->PCR[PTC12] = PORT_PCR_MUX(1)
+					   |PORT_PCR_PFE_MASK; 	/* Port C12: MUX = GPIO, input filter enabled */
+
+	/* Configure port E23 as GPIO output (LED on EVB) */
+	PTE->PDDR |= 1<<PTE23;       			/* Port E23: Data Direction= output */
+	PORTE->PCR[PTE23] = PORT_PCR_MUX(1); 	/* Port E23: MUX = GPIO */
+
+	/*!
+	 * Infinite for:
+	 * ========================
+	 */
+		for(;;)
+		{
+			if (PTC->PDIR & (1<<PTC12)) {	 /* - If Pad Data Input = 1 (BTN0 [SW3] pushed)*/
+				PTE-> PSOR |= 1<<PTE23;		 /*		Set Output on port E23 (LED on)*/
+			}
+			else {							 /* - If BTN0 was not pushed */
+				PTE-> PCOR |= 1<<PTE23;      /*		Clear Output on port E23 (LED off) */
+			}
+
+		counter++;
+		}
 }
 
-void delay(volatile int cycles)
-{
-    /* Delay function - do nothing for a number of cycles */
-    while(cycles--);
+void _exit(int code) {
+	(void)code;
+	for (;;);
 }

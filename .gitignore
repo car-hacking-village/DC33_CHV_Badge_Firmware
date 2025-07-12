@@ -2,4 +2,5 @@ build
 result
 *.exe
 .*
+!.clang-format
 !.git*

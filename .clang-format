@@ -1,0 +1,5 @@
+BasedOnStyle: webkit
+NamespaceIndentation: None
+FixNamespaceComments: true
+BreakBeforeBraces: Attach
+SpacesBeforeTrailingComments: 2

@@ -6,6 +6,8 @@
   ninja ? pkgs.ninja,
   pico-sdk ? pkgs.pico-sdk,
   picotool ? pkgs.picotool,
+  protobuf ? pkgs.protobuf,
+  protobufc ? pkgs.protobufc,
   python3 ? pkgs.python3,
 }:
 
@@ -23,6 +25,8 @@ stdenv.mkDerivation {
     gcc-arm-embedded
     ninja
     picotool
+    protobuf
+    protobufc
     python3
   ];
 

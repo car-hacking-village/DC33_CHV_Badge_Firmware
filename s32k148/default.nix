@@ -4,6 +4,8 @@
   cmake ? pkgs.cmake,
   gcc-arm-embedded ? pkgs.gcc-arm-embedded,
   ninja ? pkgs.ninja,
+  protobuf ? pkgs.protobuf,
+  protobufc ? pkgs.protobufc,
 }:
 
 stdenv.mkDerivation {
@@ -15,6 +17,8 @@ stdenv.mkDerivation {
     cmake
     gcc-arm-embedded
     ninja
+    protobuf
+    protobufc
   ];
 
   preConfigure = ''

@@ -7,6 +7,8 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 project(dc33_fw_s32k148 C CXX ASM)
 
+add_subdirectory(../common common)
+
 add_executable(
   dc33_fw_s32k148
   main.c
@@ -37,6 +39,7 @@ target_compile_options(
   $<$<COMPILE_LANGUAGE:C>:-std=gnu99>
   $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++23>
 )
+target_link_libraries(dc33_fw_s32k148 dc33_fw_common)
 target_link_options(
   dc33_fw_s32k148
   PRIVATE

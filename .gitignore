@@ -4,3 +4,5 @@ result
 .*
 !.clang-format
 !.git*
+*.pb-c.c
+*.pb-c.h

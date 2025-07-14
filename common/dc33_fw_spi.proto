@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message Message {
+  oneof message {
+    CanFrame can_frame = 1;
+  }
+}
+
+message CanFrame {
+  uint32 arbitration_id = 1;
+  uint32 dlc = 2;
+  bytes data = 3;
+}

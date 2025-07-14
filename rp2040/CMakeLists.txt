@@ -8,8 +8,10 @@ project(dc33_fw_rp2040)
 
 pico_sdk_init()
 
+add_subdirectory(../common common)
+
 add_executable(dc33_fw_rp2040 main.c)
-target_link_libraries(dc33_fw_rp2040 pico_stdlib hardware_spi)
+target_link_libraries(dc33_fw_rp2040 pico_stdlib hardware_spi dc33_fw_common)
 pico_enable_stdio_usb(dc33_fw_rp2040 1)
 pico_enable_stdio_uart(dc33_fw_rp2040 0)
 pico_add_extra_outputs(dc33_fw_rp2040)

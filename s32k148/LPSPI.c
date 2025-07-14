@@ -68,7 +68,7 @@ void LPSPI0_init_master(void)
   LPSPI0->TCR   = LPSPI_TCR_CPHA_MASK
 				  |LPSPI_TCR_PRESCALE(2)
 				  |LPSPI_TCR_PCS(0)
-				  |LPSPI_TCR_FRAMESZ(15);   /* Transmit cmd: PCS3, 16 bits, prescale func'l clk by 4, etc	*/
+				  |LPSPI_TCR_FRAMESZ(7);   /* Transmit cmd: PCS3, 8 bits, prescale func'l clk by 4, etc	*/
 											/* CPOL=0: SCK inactive state is low 							*/
 											/* CPHA=1: Change data on SCK lead'g, capture on trail'g edge	*/
 											/* PRESCALE=2: Functional clock divided by 2**2 = 4 			*/
@@ -79,7 +79,7 @@ void LPSPI0_init_master(void)
 											/* RXMSK=0: Normal transfer: rx data stored in rx FIFO 		*/
 											/* TXMSK=0: Normal transfer: data loaded from tx FIFO 			*/
 											/* WIDTH=0: Single bit transfer 								*/
-											/* FRAMESZ=15: # bits in frame = 15+1=16 						*/
+											/* FRAMESZ=7: # bits in frame = 7+1=8 						*/
 
   LPSPI0->CCR   = LPSPI_CCR_SCKPCS(4)
 				  |LPSPI_CCR_PCSSCK(4)
@@ -101,7 +101,7 @@ void LPSPI0_init_master(void)
 											/* MEN=1: Module is enabled 				*/
 }
 
-void LPSPI0_transmit_16bits (uint16_t send)
+void LPSPI0_transmit_8bits (uint8_t send)
 {
   while((LPSPI0->SR & LPSPI_SR_TDF_MASK)>>LPSPI_SR_TDF_SHIFT==0);
                                    /* Wait for Tx FIFO available 	*/
@@ -109,9 +109,9 @@ void LPSPI0_transmit_16bits (uint16_t send)
   LPSPI0->SR |= LPSPI_SR_TDF_MASK; /* Clear TDF flag 				*/
 }
 
-uint16_t LPSPI0_receive_16bits (void)
+uint8_t LPSPI0_receive_8bits (void)
 {
-  uint16_t recieve = 0;
+  uint8_t recieve = 0;
 
   while((LPSPI0->SR & LPSPI_SR_RDF_MASK)>>LPSPI_SR_RDF_SHIFT==0);
                                    /* Wait at least one RxFIFO entry 	*/

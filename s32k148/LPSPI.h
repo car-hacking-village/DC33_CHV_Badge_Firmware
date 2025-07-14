@@ -34,7 +34,7 @@
 #define LPSPI_H_
 
 void LPSPI0_init_master (void);
-void LPSPI0_transmit_16bits (uint16_t);
-uint16_t LPSPI0_receive_16bits (void);
+void LPSPI0_transmit_8bits (uint8_t);
+uint8_t LPSPI0_receive_8bits (void);
 
 #endif /* LPSPI_H_ */

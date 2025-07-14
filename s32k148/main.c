@@ -109,10 +109,10 @@ int main(void)
 	  for(;;)
 	  {
 		  LPUART1_transmit_char('>');  		/* Transmit prompt character*/
-		  uint16_t c = LPUART1_receive_and_echo_char();	/* Wait for input char, receive & echo it*/
+		  uint8_t c = LPUART1_receive_and_echo_char();	/* Wait for input char, receive & echo it*/
       c = (c << 8) | c;
-      LPSPI0_transmit_16bits(c);
-      (void)LPSPI0_receive_16bits();
+      LPSPI0_transmit_8bits(c);
+      (void)LPSPI0_receive_8bits();
 	  }
 }
 

@@ -12,12 +12,15 @@ add_subdirectory(../common common)
 add_executable(
   dc33_fw_s32k148
   main.c
+  FlexCAN.c
   LPSPI.c
   LPUART.c
   clocks_and_modes.c
   startup.c
   startup_S32K148.S
   system_S32K148.c
+  unused.c
+  hex.c
 )
 target_compile_options(
   dc33_fw_s32k148
@@ -39,6 +42,7 @@ target_compile_options(
   $<$<COMPILE_LANGUAGE:C>:-std=gnu99>
   $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++23>
 )
+target_compile_options(dc33_fw_common PRIVATE -mcpu=cortex-m4)
 target_link_libraries(dc33_fw_s32k148 dc33_fw_common)
 target_link_options(
   dc33_fw_s32k148

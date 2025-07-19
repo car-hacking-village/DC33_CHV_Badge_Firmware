@@ -1,13 +1,38 @@
 syntax = "proto3";
 
+// Top-level message; use field presence to determine what message it actually is
 message Message {
   oneof message {
     CanFrame can_frame = 1;
+    LedControl led_control = 2;
+    Reset reset = 15;
   }
 }
 
+// Can be sent by either processor to pass a CAN frame between USB and bus
 message CanFrame {
   uint32 arbitration_id = 1;
   uint32 dlc = 2;
   bytes data = 3;
+}
+
+// Sent by the S32K148 to control the LEDs attached to the RP2040
+message LedControl {
+  oneof leds {
+    // Sets LEDs akin to: REG = set_leds
+    uint32 set_leds = 1;
+
+    // Sets LEDs akin to: REG |= or_leds
+    uint32 or_leds = 2;
+
+    // Sets LEDs akin to: REG &= and_leds
+    uint32 and_leds = 3;
+
+    // Sets LEDs akin to: REG ^= xor_leds
+    uint32 xor_leds = 4;
+  }
+}
+
+// Sent by the RP2040 to request a reset of the S32K148
+message Reset {
 }

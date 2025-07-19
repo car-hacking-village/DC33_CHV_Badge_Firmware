@@ -8,7 +8,11 @@ project(dc33_fw_rp2040)
 
 pico_sdk_init()
 
-add_subdirectory(../common common)
+if (DEFINED ENV{FW_COMMON_SRC})
+  add_subdirectory("$ENV{FW_COMMON_SRC}" common)
+else()
+  add_subdirectory(../common common)
+endif()
 
 add_executable(dc33_fw_rp2040 main.c)
 target_link_libraries(dc33_fw_rp2040 pico_stdlib hardware_spi dc33_fw_common)

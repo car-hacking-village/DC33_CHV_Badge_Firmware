@@ -24,5 +24,6 @@ stdenv.mkDerivation {
   preConfigure = ''
     export CC=${gcc-arm-embedded}/bin/arm-none-eabi-gcc
     export CXX=${gcc-arm-embedded}/bin/arm-none-eabi-g++
+    export FW_COMMON_SRC=${../common}
   '';
 }

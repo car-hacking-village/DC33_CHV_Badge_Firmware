@@ -7,7 +7,11 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 project(dc33_fw_s32k148 C CXX ASM)
 
-add_subdirectory(../common common)
+if (DEFINED ENV{FW_COMMON_SRC})
+  add_subdirectory("$ENV{FW_COMMON_SRC}" common)
+else()
+  add_subdirectory(../common common)
+endif()
 
 add_executable(
   dc33_fw_s32k148

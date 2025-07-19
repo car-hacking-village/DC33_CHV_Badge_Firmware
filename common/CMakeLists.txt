@@ -4,7 +4,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(dc33_fw_common)
 
+add_custom_command(
+  OUTPUT dc33_fw_spi.pb-c.c dc33_fw_spi.pb-c.h
+  COMMAND protoc -I${CMAKE_CURRENT_SOURCE_DIR} --c_out=${CMAKE_CURRENT_BINARY_DIR} dc33_fw_spi.proto
+  DEPENDS dc33_fw_spi.proto
+  VERBATIM
+)
+add_custom_target(dc33_fw_common_protobuf DEPENDS dc33_fw_spi.pb-c.c dc33_fw_spi.pb-c.h)
+
 add_library(dc33_fw_common dc33_fw_spi.pb-c.c spi.c protobuf-c/protobuf-c.c)
+add_dependencies(dc33_fw_common dc33_fw_common_protobuf)
 target_compile_options(
   dc33_fw_common
   PRIVATE
@@ -19,4 +28,4 @@ target_compile_options(
   -fno-exceptions
   -mthumb
 )
-target_include_directories(dc33_fw_common PUBLIC .)
+target_include_directories(dc33_fw_common PUBLIC . ${CMAKE_CURRENT_BINARY_DIR})

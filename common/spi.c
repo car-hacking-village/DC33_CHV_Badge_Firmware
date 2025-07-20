@@ -50,3 +50,31 @@ struct spi_message_data spi_get_message(void) {
     }
     return result;
 }
+
+void spi_cb_transmit_byte(uint8_t byte);
+
+void spi_transmit_message(Message const* msg) {
+    size_t size = message__get_packed_size(msg);
+    if (size <= 256) {
+        message__pack(msg, buffer);
+    }
+    // TODO: calculate CRC
+    for (size_t i = 0; i < size; i++) {
+        switch (buffer[i]) {
+        case 0x7D:
+            spi_cb_transmit_byte(0x7D);
+            spi_cb_transmit_byte(0x5D);
+            break;
+        case 0x7E:
+            spi_cb_transmit_byte(0x7D);
+            spi_cb_transmit_byte(0x5E);
+            break;
+        default:
+            spi_cb_transmit_byte(buffer[i]);
+            break;
+        }
+    }
+    spi_cb_transmit_byte(0);
+    spi_cb_transmit_byte(0);
+    spi_cb_transmit_byte(0x7E);
+}

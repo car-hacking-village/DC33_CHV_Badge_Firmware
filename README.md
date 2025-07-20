@@ -31,7 +31,7 @@ either side).
   - Left green: Q176 pin J4-18 (PTA1)
   - Left blue: Q176 pin J4-15 (PTA0)
   - Right red: Q176 pin J2-17 (PTB11)
-  - Right green: Q176 pin J2-20 (PTB10)
+  - Right green: Q176 pin J6-7 (PTB10)
   - Right blue: Q176 pin J6-10 (PTB9)
 - Dino
   - Left red: Pico pin 26 (GPIO20)

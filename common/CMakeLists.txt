@@ -12,7 +12,7 @@ add_custom_command(
 )
 add_custom_target(dc33_fw_common_protobuf DEPENDS dc33_fw_spi.pb-c.c dc33_fw_spi.pb-c.h)
 
-add_library(dc33_fw_common dc33_fw_spi.pb-c.c spi.c protobuf-c/protobuf-c.c)
+add_library(dc33_fw_common dc33_fw_spi.pb-c.c led.c spi.c protobuf-c/protobuf-c.c)
 add_dependencies(dc33_fw_common dc33_fw_common_protobuf)
 target_compile_options(
   dc33_fw_common

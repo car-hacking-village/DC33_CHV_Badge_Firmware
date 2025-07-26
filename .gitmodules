@@ -1,0 +1,9 @@
+[submodule "bootloader"]
+	path = vendor/bootloader
+	url = https://github.com/nxp-auto-support/AN12218_sw.git
+[submodule "protobuf-c"]
+	path = vendor/protobuf-c
+	url = https://github.com/protobuf-c/protobuf-c.git
+[submodule "s32k148_cookbook"]
+	path = vendor/s32k148_cookbook
+	url = https://github.com/nxp-auto-support/s32k148_cookbook.git

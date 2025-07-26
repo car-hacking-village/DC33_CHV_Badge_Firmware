@@ -19,6 +19,7 @@ let
   '';
 
   sdk = pico-sdk.override { withSubmodules = true; };
+  vendor = callPackage ./vendor/default.nix { };
 in
 
 mkShell {
@@ -40,5 +41,6 @@ mkShell {
     export PICO_BOARD=pico
     export CC=${gcc-arm-embedded}/bin/arm-none-eabi-gcc
     export CXX=${gcc-arm-embedded}/bin/arm-none-eabi-g++
+    export PROTOBUF_C_PATH=${vendor.protobuf-c}
   '';
 }

@@ -17,6 +17,8 @@ let
 
     find . -type f \( -name '*.cpp' -or -name '*.h' \) -print0 | xargs -0 -t ${clang-tools}/bin/clang-format -i
   '';
+
+  vendor = callPackage ../vendor/default.nix { };
 in
 
 mkShell {
@@ -32,5 +34,6 @@ mkShell {
   shellHook = ''
     export CC=${gcc-arm-embedded}/bin/arm-none-eabi-gcc
     export CXX=${gcc-arm-embedded}/bin/arm-none-eabi-g++
+    export PROTOBUF_C_PATH=${vendor.protobuf-c}
   '';
 }

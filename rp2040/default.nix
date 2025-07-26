@@ -1,5 +1,6 @@
 {
   pkgs ? import <nixpkgs> { },
+  callPackage ? pkgs.callPackage,
   stdenv ? pkgs.stdenv,
   cmake ? pkgs.cmake,
   gcc-arm-embedded ? pkgs.gcc-arm-embedded,
@@ -13,6 +14,7 @@
 
 let
   sdk = pico-sdk.override { withSubmodules = true; };
+  vendor = callPackage ../vendor/default.nix { };
 in
 
 stdenv.mkDerivation {
@@ -39,5 +41,6 @@ stdenv.mkDerivation {
     export CC=${gcc-arm-embedded}/bin/arm-none-eabi-gcc
     export CXX=${gcc-arm-embedded}/bin/arm-none-eabi-g++
     export FW_COMMON_SRC=${../common}
+    export PROTOBUF_C_PATH=${vendor.protobuf-c}
   '';
 }

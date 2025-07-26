@@ -23,8 +23,8 @@ Raspberry Pi Pico.
 Fred's LEDs are connected to the S32K148, and Dino's LEDs are connected
 to the RP2040. All LEDs are held up with resistors and pulled down by
 the microcontroller (inverted logic: 1=off, 0=on). Connect the anode to
-3V3 and the cathode to the pin (but be sure to include a resistor on
-either side).
+3V3 and the cathode to the pin (but be sure to include a current
+limiting resistor on either side, if needed).
 
 - Fred
   - Left red: Q176 pin J5-4 (PTB8)
@@ -60,3 +60,10 @@ Wire the following SPI pins between the Q176 and Pico boards:
 - GND
   - Q176 pin J2-19 (GND)
   - Pico pin 13 (GND)
+
+### Example
+
+Here is a known working setup with 3.3V blue LEDs (no resistors
+required):
+
+![breadboard](breadboard.png)

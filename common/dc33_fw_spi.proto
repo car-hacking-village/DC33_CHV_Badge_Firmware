@@ -33,6 +33,8 @@ message LedControl {
   }
 }
 
-// Sent by the RP2040 to request a reset of the S32K148
+// Sent by the RP2040 to request a reset of the S32K148 (to enter bootloader mode).
+// Note that the reset PIN is not connected to the RP2040, so this *needs* to be implemented.
 message Reset {
+  // No members required.
 }

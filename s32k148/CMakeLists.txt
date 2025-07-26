@@ -7,10 +7,22 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 project(dc33_fw_s32k148 C CXX ASM)
 
-if (DEFINED ENV{FW_COMMON_SRC})
+if(DEFINED ENV{FW_COMMON_SRC})
   add_subdirectory("$ENV{FW_COMMON_SRC}" common)
 else()
   add_subdirectory(../common common)
+endif()
+
+if(DEFINED ENV{BOOTLOADER_PATH})
+  set(BOOTLOADER_PATH "$ENV{BOOTLOADER_PATH}")
+else()
+  set(BOOTLOADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/bootloader")
+endif()
+
+if(DEFINED ENV{COOKBOOK_PATH})
+  set(COOKBOOK_PATH "$ENV{COOKBOOK_PATH}")
+else()
+  set(COOKBOOK_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/s32k148_cookbook")
 endif()
 
 add_executable(
@@ -18,11 +30,11 @@ add_executable(
   main.c
   FlexCAN.c
   LPSPI.c
-  LPUART.c
-  clocks_and_modes.c
-  startup.c
-  startup_S32K148.S
-  system_S32K148.c
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/startup.c"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/startup_S32K148.S"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/system_S32K148.c"
+  "${COOKBOOK_PATH}/S32K148_Project_FlexCan/src/clocks_and_modes.c"
+  "${COOKBOOK_PATH}/S32K148_Project_LPUART/src/LPUART.c"
   unused.c
   hex.c
 )
@@ -47,18 +59,25 @@ target_compile_options(
   $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++23>
 )
 target_compile_options(dc33_fw_common PRIVATE -mcpu=cortex-m4)
+target_include_directories(
+  dc33_fw_s32k148
+  PRIVATE
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/include"
+  "${COOKBOOK_PATH}/S32K148_Project_FlexCan/src"
+  "${COOKBOOK_PATH}/S32K148_Project_LPUART/src"
+)
 target_link_libraries(dc33_fw_s32k148 dc33_fw_common)
 target_link_options(
   dc33_fw_s32k148
   PRIVATE
   "-Wl,-Map=$<TARGET_FILE_DIR:dc33_fw_s32k148>/dc33_fw_s32k148.map"
   --entry=Reset_Handler
-  -T "${CMAKE_CURRENT_SOURCE_DIR}/S32K148_256_flash.ld"
+  -T "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Linker_Files/S32K148_256_flash.ld"
   -Wl,-gc-sections
   -mcpu=cortex-m4
   -mthumb
 )
-set_target_properties(dc33_fw_s32k148 PROPERTIES LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/S32K148_256_flash.ld")
+set_target_properties(dc33_fw_s32k148 PROPERTIES LINK_DEPENDS "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Linker_Files/S32K148_256_flash.ld")
 
 add_custom_command(OUTPUT dc33_fw_s32k148.srec COMMAND arm-none-eabi-objcopy -O srec $<TARGET_FILE:dc33_fw_s32k148> dc33_fw_s32k148.srec DEPENDS dc33_fw_s32k148)
 add_custom_target(dc33_fw_s32k148_srec ALL DEPENDS dc33_fw_s32k148.srec)

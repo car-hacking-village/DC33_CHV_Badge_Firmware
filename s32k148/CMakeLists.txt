@@ -85,3 +85,64 @@ add_custom_target(dc33_fw_s32k148_srec ALL DEPENDS dc33_fw_s32k148.srec)
 install(TARGETS dc33_fw_s32k148 DESTINATION bin)
 install(FILES $<TARGET_FILE_DIR:dc33_fw_s32k148>/dc33_fw_s32k148.map DESTINATION bin)
 install(FILES $<TARGET_FILE_DIR:dc33_fw_s32k148>/dc33_fw_s32k148.srec DESTINATION bin)
+
+add_executable(
+  dc33_fw_s32k148_bootloader
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/main.c"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/drivers/clock.c"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/drivers/comm.c"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/drivers/fsl_flash_driver_c90tfs.c"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/drivers/mem_man.c"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/drivers/pin_config.c"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/drivers/pit.c"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/drivers/timeout.c"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/drivers/uart.c"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Startup_Code/startup.c"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Startup_Code/startup_S32K148.S"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Startup_Code/system_S32K148.c"
+  unused.c
+)
+target_compile_options(
+  dc33_fw_s32k148_bootloader
+  PRIVATE
+  -DCPU_S32K148
+  -DSTART_FROM_FLASH
+  -Os
+  -Wall
+  -Wextra
+  -Wpedantic
+  -Wshadow
+  -fdata-sections
+  -ffunction-sections
+  -fmessage-length=0
+  -fno-exceptions
+  -mcpu=cortex-m4
+  -mthumb
+  $<$<COMPILE_LANGUAGE:ASM>:-x assembler-with-cpp>
+  $<$<COMPILE_LANGUAGE:C>:-std=gnu99>
+  $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++23>
+)
+target_include_directories(
+  dc33_fw_s32k148_bootloader
+  PRIVATE
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/include"
+  "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/drivers/inc"
+)
+target_link_options(
+  dc33_fw_s32k148_bootloader
+  PRIVATE
+  "-Wl,-Map=$<TARGET_FILE_DIR:dc33_fw_s32k148_bootloader>/dc33_fw_s32k148_bootloader.map"
+  --entry=Reset_Handler
+  -T "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Linker_Files/S32K148_256_flash.ld"
+  -Wl,-gc-sections
+  -mcpu=cortex-m4
+  -mthumb
+)
+set_target_properties(dc33_fw_s32k148_bootloader PROPERTIES LINK_DEPENDS "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Linker_Files/S32K148_256_flash.ld")
+
+add_custom_command(OUTPUT dc33_fw_s32k148_bootloader.srec COMMAND arm-none-eabi-objcopy -O srec $<TARGET_FILE:dc33_fw_s32k148_bootloader> dc33_fw_s32k148_bootloader.srec DEPENDS dc33_fw_s32k148_bootloader)
+add_custom_target(dc33_fw_s32k148_bootloader_srec ALL DEPENDS dc33_fw_s32k148_bootloader.srec)
+
+install(TARGETS dc33_fw_s32k148_bootloader DESTINATION bin)
+install(FILES $<TARGET_FILE_DIR:dc33_fw_s32k148_bootloader>/dc33_fw_s32k148_bootloader.map DESTINATION bin)
+install(FILES $<TARGET_FILE_DIR:dc33_fw_s32k148_bootloader>/dc33_fw_s32k148_bootloader.srec DESTINATION bin)

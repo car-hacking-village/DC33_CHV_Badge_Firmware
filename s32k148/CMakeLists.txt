@@ -35,7 +35,6 @@ add_executable(
   "${COOKBOOK_PATH}/S32K148_Project_FlexCan/src/FlexCAN.c"
   "${COOKBOOK_PATH}/S32K148_Project_FlexCan/src/clocks_and_modes.c"
   "${COOKBOOK_PATH}/S32K148_Project_LPUART/src/LPUART.c"
-  unused.c
   hex.c
 )
 target_compile_options(
@@ -54,6 +53,7 @@ target_compile_options(
   -fno-exceptions
   -mcpu=cortex-m4
   -mthumb
+  -specs=nosys.specs
   $<$<COMPILE_LANGUAGE:ASM>:-x assembler-with-cpp>
   $<$<COMPILE_LANGUAGE:C>:-std=gnu99>
   $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++23>
@@ -76,6 +76,8 @@ target_link_options(
   -Wl,-gc-sections
   -mcpu=cortex-m4
   -mthumb
+  -n
+  -specs=nosys.specs
 )
 set_target_properties(dc33_fw_s32k148 PROPERTIES LINK_DEPENDS "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Linker_Files/S32K148_256_flash.ld")
 
@@ -100,7 +102,6 @@ add_executable(
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Startup_Code/startup.c"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Startup_Code/startup_S32K148.S"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Startup_Code/system_S32K148.c"
-  unused.c
 )
 target_compile_options(
   dc33_fw_s32k148_bootloader
@@ -118,6 +119,7 @@ target_compile_options(
   -fno-exceptions
   -mcpu=cortex-m4
   -mthumb
+  -specs=nosys.specs
   $<$<COMPILE_LANGUAGE:ASM>:-x assembler-with-cpp>
   $<$<COMPILE_LANGUAGE:C>:-std=gnu99>
   $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++23>
@@ -137,6 +139,8 @@ target_link_options(
   -Wl,-gc-sections
   -mcpu=cortex-m4
   -mthumb
+  -n
+  -specs=nosys.specs
 )
 set_target_properties(dc33_fw_s32k148_bootloader PROPERTIES LINK_DEPENDS "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Linker_Files/S32K148_256_flash.ld")
 

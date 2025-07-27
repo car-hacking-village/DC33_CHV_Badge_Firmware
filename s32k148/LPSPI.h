@@ -33,8 +33,10 @@
 #ifndef LPSPI_H_
 #define LPSPI_H_
 
-void LPSPI0_init_master (void);
-void LPSPI0_transmit_8bits (uint8_t);
-uint8_t LPSPI0_receive_8bits (void);
+#include <stdint.h>
+
+void LPSPI0_init_master(void);
+void LPSPI0_transmit_8bits(uint8_t);
+uint8_t LPSPI0_receive_8bits(void);
 
 #endif /* LPSPI_H_ */

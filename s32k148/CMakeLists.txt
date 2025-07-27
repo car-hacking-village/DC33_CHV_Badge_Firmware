@@ -28,11 +28,11 @@ endif()
 add_executable(
   dc33_fw_s32k148
   main.c
-  FlexCAN.c
   LPSPI.c
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/startup.c"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/startup_S32K148.S"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/system_S32K148.c"
+  "${COOKBOOK_PATH}/S32K148_Project_FlexCan/src/FlexCAN.c"
   "${COOKBOOK_PATH}/S32K148_Project_FlexCan/src/clocks_and_modes.c"
   "${COOKBOOK_PATH}/S32K148_Project_LPUART/src/LPUART.c"
   unused.c

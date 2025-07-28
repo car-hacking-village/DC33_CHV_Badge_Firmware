@@ -31,7 +31,6 @@
  */
 
 #include <FlexCAN.h>
-#include <LPSPI.h>
 #include <LPUART.h>
 #include <S32K148.h>
 #include <clocks_and_modes.h>
@@ -39,6 +38,8 @@
 #include <device_registers.h>
 #include <led.h>
 #include <spi.h>
+
+#include "./LPSPI.h"
 
 extern uint32_t RxCODE;
 extern uint32_t RxID;
@@ -99,13 +100,11 @@ int main(void) {
     volatile size_t delay = 0;
     PTA->PCOR |= (1 << 1) | (1 << 0);
     PTB->PCOR |= 1 << 8;
-    for (delay = 0; delay < 5000000; delay++)
-        ;
+    for (delay = 0; delay < 5000000; delay++) { };
     PTA->PSOR |= (1 << 1) | (1 << 0);
     PTB->PSOR |= 1 << 8;
     PTB->PCOR |= (1 << 11) | (1 << 10) | (1 << 9);
-    for (delay = 0; delay < 5000000; delay++)
-        ;
+    for (delay = 0; delay < 5000000; delay++) { };
     PTB->PSOR |= (1 << 11) | (1 << 10) | (1 << 9);
     struct dino_led leds = {
         .left_red = true,
@@ -121,8 +120,7 @@ int main(void) {
     LPSPI0_transmit_8bits(0x7E);
     (void)LPSPI0_receive_8bits();
     spi_transmit_message(&message);
-    for (delay = 0; delay < 5000000; delay++)
-        ;
+    for (delay = 0; delay < 5000000; delay++) { };
     leds.left_red = false;
     leds.left_green = false;
     leds.left_blue = false;
@@ -131,8 +129,7 @@ int main(void) {
     leds.right_blue = true;
     led_control.set_leds = dino_led_encode(&leds);
     spi_transmit_message(&message);
-    for (delay = 0; delay < 5000000; delay++)
-        ;
+    for (delay = 0; delay < 5000000; delay++) { };
     leds.right_red = false;
     leds.right_green = false;
     leds.right_blue = false;

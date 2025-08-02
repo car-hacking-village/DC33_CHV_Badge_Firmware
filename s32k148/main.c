@@ -31,7 +31,6 @@
  */
 
 #include <FlexCAN.h>
-#include <LPUART.h>
 #include <S32K148.h>
 #include <clocks_and_modes.h>
 #include <dc33_fw_spi.pb-c.h>
@@ -40,6 +39,7 @@
 #include <spi.h>
 
 #include "./LPSPI.h"
+#include "./LPUART.h"
 
 extern uint32_t RxCODE;
 extern uint32_t RxID;

@@ -41,6 +41,8 @@ mkShell {
     export PICO_BOARD=pico
     export CC=${gcc-arm-embedded}/bin/arm-none-eabi-gcc
     export CXX=${gcc-arm-embedded}/bin/arm-none-eabi-g++
+    export BOOTLOADER_PATH=${vendor.bootloader}
+    export COOKBOOK_PATH=${vendor.s32k148_cookbook}
     export PROTOBUF_C_PATH=${vendor.protobuf-c}
   '';
 }

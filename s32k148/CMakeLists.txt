@@ -29,12 +29,12 @@ add_executable(
   dc33_fw_s32k148
   main.c
   LPSPI.c
+  LPUART.c
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/startup.c"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/startup_S32K148.S"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/system_S32K148.c"
   "${COOKBOOK_PATH}/S32K148_Project_FlexCan/src/FlexCAN.c"
   "${COOKBOOK_PATH}/S32K148_Project_FlexCan/src/clocks_and_modes.c"
-  "${COOKBOOK_PATH}/S32K148_Project_LPUART/src/LPUART.c"
   hex.c
 )
 target_compile_options(
@@ -64,7 +64,6 @@ target_include_directories(
   PRIVATE
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/include"
   "${COOKBOOK_PATH}/S32K148_Project_FlexCan/src"
-  "${COOKBOOK_PATH}/S32K148_Project_LPUART/src"
 )
 target_link_libraries(dc33_fw_s32k148 dc33_fw_common)
 target_link_options(
@@ -72,14 +71,14 @@ target_link_options(
   PRIVATE
   "-Wl,-Map=$<TARGET_FILE_DIR:dc33_fw_s32k148>/dc33_fw_s32k148.map"
   --entry=Reset_Handler
-  -T "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Linker_Files/S32K148_256_flash.ld"
+  -T "${CMAKE_CURRENT_SOURCE_DIR}/main.ld"
   -Wl,-gc-sections
   -mcpu=cortex-m4
   -mthumb
   -n
   -specs=nosys.specs
 )
-set_target_properties(dc33_fw_s32k148 PROPERTIES LINK_DEPENDS "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Linker_Files/S32K148_256_flash.ld")
+set_target_properties(dc33_fw_s32k148 PROPERTIES LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/main.ld")
 
 add_custom_command(OUTPUT dc33_fw_s32k148.srec COMMAND arm-none-eabi-objcopy -O srec $<TARGET_FILE:dc33_fw_s32k148> dc33_fw_s32k148.srec DEPENDS dc33_fw_s32k148)
 add_custom_target(dc33_fw_s32k148_srec ALL DEPENDS dc33_fw_s32k148.srec)
@@ -91,11 +90,11 @@ install(FILES $<TARGET_FILE_DIR:dc33_fw_s32k148>/dc33_fw_s32k148.srec DESTINATIO
 add_executable(
   dc33_fw_s32k148_bootloader
   bootloader.c
+  LPUART.c
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Startup_Code/startup.c"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Startup_Code/startup_S32K148.S"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Startup_Code/system_S32K148.c"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/drivers/fsl_flash_driver_c90tfs.c"
-  "${COOKBOOK_PATH}/S32K148_Project_LPUART/src/LPUART.c"
   "${COOKBOOK_PATH}/S32K148_Project_LPUART/src/clocks_and_modes.c"
 )
 target_compile_options(
@@ -131,14 +130,14 @@ target_link_options(
   PRIVATE
   "-Wl,-Map=$<TARGET_FILE_DIR:dc33_fw_s32k148_bootloader>/dc33_fw_s32k148_bootloader.map"
   --entry=Reset_Handler
-  -T "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Linker_Files/S32K148_256_flash.ld"
+  -T "${CMAKE_CURRENT_SOURCE_DIR}/bootloader.ld"
   -Wl,-gc-sections
   -mcpu=cortex-m4
   -mthumb
   -n
   -specs=nosys.specs
 )
-set_target_properties(dc33_fw_s32k148_bootloader PROPERTIES LINK_DEPENDS "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Linker_Files/S32K148_256_flash.ld")
+set_target_properties(dc33_fw_s32k148_bootloader PROPERTIES LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/bootloader.ld")
 
 add_custom_command(OUTPUT dc33_fw_s32k148_bootloader.srec COMMAND arm-none-eabi-objcopy -O srec $<TARGET_FILE:dc33_fw_s32k148_bootloader> dc33_fw_s32k148_bootloader.srec DEPENDS dc33_fw_s32k148_bootloader)
 add_custom_target(dc33_fw_s32k148_bootloader_srec ALL DEPENDS dc33_fw_s32k148_bootloader.srec)

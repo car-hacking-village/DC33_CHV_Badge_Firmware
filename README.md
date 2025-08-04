@@ -1,9 +1,37 @@
 ## Building
 
-To build the full firmware package, run `nix-build`.
+### With Nix (Recommended)
+
+Nix is a package manager and a tool for reproducible builds. Using Nix
+is the recommended build approach. You can download it from
+<https://nixos.org/>.
+
+To build the full firmware package, run `nix-build`. Nix will fetch
+dependencies as required.
 
 To build only firmware for RP2040 or S32K148, change directory into one
 of the `rp2040` or `s32k148` directories and run `nix-build` in there.
+
+Running `nix-shell` will create an environment where you can run `cmake`
+in-place, useful for IDEs and such.
+
+### Without Nix
+
+When building without Nix, dependencies are available as git submodules.
+When cloning this repository, be sure to pass the `--recursive`
+parameter to `git clone`. If you didn't do this, then you can run
+`git submodule update --init --recursive` instead.
+
+Change directory into one of the `rp2040` or `s32k148` directories, then
+run:
+
+``` sh
+export PICO_SDK_PATH=/path/to/pico-sdk
+export PICO_PLATFORM=rp2040
+export PICO_BOARD=pico
+cmake -S . -B build -G Ninja
+ninja -C build
+```
 
 ## Dev Board Setup
 
@@ -40,6 +68,42 @@ limiting resistor on either side, if needed).
   - Right red: Pico pin 34 (GPIO28)
   - Right green: Pico pin 32 (GPIO27)
   - Right blue: Pico pin 31 (GPIO26)
+
+### UART
+
+UART is required to test bootloader and USB flashing, but nothing else.
+
+*Note: UART0 is currently unused.*
+
+Wire the following UART pins between the Q176 and Pico boards:
+
+- UART0 (alt6)
+  - S32 TX (RP RX)
+    - Q176 pin J1-4 (PTA3)
+    - Pico pin 2 (GPIO1)
+  - S32 RX (RP TX)
+    - Q176 pin J1-1 (PTA2)
+    - Pico pin 1 (GPIO0)
+- UART1
+  - S32 TX (RP RX)
+    - Q176 pin J6-8 (PTC7)
+    - Pico pin 7 (GPIO5)
+  - S32 RX (RP TX)
+    - Q176 pin J6-11 (PTC6)
+    - Pico pin 6 (GPIO4)
+
+### I2C
+
+*Note: I2C is currently unused.*
+
+Wire the following I2C pins between the Q176 and Pico boards:
+
+- SDA
+  - Q176: **not broken out!** (PTB6)
+  - Pico pin 4 (GPIO2)
+- SCL
+  - Q176 pin J1-8 (PTB7)
+  - Pico pin 5 (GPIO3)
 
 ### SPI
 

@@ -14,6 +14,16 @@
 #include "spi.h"
 #include "dc33_fw_spi.pb-c.h"
 
+enum {
+    DINO_LEFT_R = 20,
+    DINO_LEFT_G = 19,
+    DINO_LEFT_B = 18,
+
+    DINO_RIGHT_R = 28,
+    DINO_RIGHT_G = 27,
+    DINO_RIGHT_B = 26,
+};
+
 int main() {
     stdio_init_all();
     printf("Init\n");
@@ -50,8 +60,7 @@ int main() {
         spi_read_blocking(spi1, 0x7e, &in_buf, 1);
         bool message_ready = spi_handle_byte(in_buf);
         if (message_ready) {
-            struct spi_message_data raw = spi_get_message();
-            Message* message = message__unpack(NULL, raw.size, raw.data);
+            Message* message = spi_get_message();
             switch (message->message_case) {
             case MESSAGE__MESSAGE_CAN_FRAME:
                 printf("%03" PRIX32 "  [%" PRIu32 "] ", message->can_frame->arbitration_id, message->can_frame->dlc);

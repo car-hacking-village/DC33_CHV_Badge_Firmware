@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "dc33_fw_spi.pb-c.h"
+
 static uint8_t buffer[256];
 static size_t length = 0;
 static bool ready = false;
@@ -42,16 +44,12 @@ bool spi_handle_byte(uint8_t byte) {
     }
 }
 
-struct spi_message_data spi_get_message(void) {
-    struct spi_message_data result = { NULL, 0 };
-    if (ready) {
-        result.data = buffer;
-        result.size = length;
+Message* spi_get_message(void) {
+    if (!ready) {
+        return NULL;
     }
-    return result;
+    return message__unpack(NULL, length, buffer);
 }
-
-void spi_cb_transmit_byte(uint8_t byte);
 
 void spi_transmit_message(Message const* msg) {
     size_t size = message__get_packed_size(msg);

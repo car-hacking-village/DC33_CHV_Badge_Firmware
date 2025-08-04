@@ -11,15 +11,17 @@ extern "C" {
 
 #include "dc33_fw_spi.pb-c.h"
 
-struct spi_message_data {
-    uint8_t* data;
-    size_t size;
-};
-
+/** Caller must call this when a byte is received. Returns true if a message is ready. */
 bool spi_handle_byte(uint8_t byte);
-struct spi_message_data spi_get_message(void);
 
+/** Caller must free memory with message__free_unpacked(NULL, msg). */
+Message* spi_get_message(void);
+
+/** Queues a message for transmission. Actual transmission is done by spi_cb_transmit_byte callback. */
 void spi_transmit_message(Message const* msg);
+
+/** Callback: firmware must implement this function. */
+void spi_cb_transmit_byte(uint8_t byte);
 
 #ifdef __cplusplus
 }

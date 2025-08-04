@@ -7,17 +7,6 @@ extern "C" {
 
 #include <stdint.h>
 
-/** Pins for RP2040 LEDs */
-enum {
-    DINO_LEFT_R = 20,
-    DINO_LEFT_G = 19,
-    DINO_LEFT_B = 18,
-
-    DINO_RIGHT_R = 28,
-    DINO_RIGHT_G = 27,
-    DINO_RIGHT_B = 26,
-};
-
 /*
  * LED bits are encoded into a byte as follows:
  *
@@ -39,8 +28,25 @@ struct dino_led {
     int right_blue : 1;
 };
 
-uint32_t dino_led_encode(struct dino_led const* leds);
-struct dino_led dino_led_decode(uint32_t leds);
+static inline uint32_t dino_led_encode(const struct dino_led* leds) {
+    return ((leds->left_red & 1) << 5)
+        | ((leds->left_green & 1) << 4)
+        | ((leds->left_blue & 1) << 3)
+        | ((leds->right_red & 1) << 2)
+        | ((leds->right_green & 1) << 1)
+        | ((leds->right_blue & 1) << 0);
+}
+
+static inline struct dino_led dino_led_decode(uint32_t leds) {
+    return (struct dino_led) {
+        .left_red = (leds & 32) >> 5,
+        .left_green = (leds & 16) >> 4,
+        .left_blue = (leds & 8) >> 3,
+        .right_red = (leds & 4) >> 2,
+        .right_green = (leds & 2) >> 1,
+        .right_blue = leds & 1,
+    };
+}
 
 #ifdef __cplusplus
 }

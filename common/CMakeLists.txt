@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(NOT CMAKE_SYSTEM_NAME)
+  set(CMAKE_SYSTEM_NAME Generic)
+  set(CMAKE_SYSTEM_PROCESSOR arm)
+  set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+endif()
 
 project(dc33_fw_common)
 
@@ -18,7 +23,7 @@ add_custom_command(
 )
 add_custom_target(dc33_fw_common_protobuf DEPENDS dc33_fw_spi.pb-c.c dc33_fw_spi.pb-c.h)
 
-add_library(dc33_fw_common dc33_fw_spi.pb-c.c led.c spi.c "${PROTOBUF_C_PATH}/protobuf-c/protobuf-c.c")
+add_library(dc33_fw_common dc33_fw_spi.pb-c.c spi.c "${PROTOBUF_C_PATH}/protobuf-c/protobuf-c.c")
 add_dependencies(dc33_fw_common dc33_fw_common_protobuf)
 target_compile_options(
   dc33_fw_common

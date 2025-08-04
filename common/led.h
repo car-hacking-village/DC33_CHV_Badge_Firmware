@@ -5,8 +5,6 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
-
 /*
  * LED bits are encoded into a byte as follows:
  *
@@ -19,34 +17,14 @@ extern "C" {
  * |--------+--------+------+-------+------+-------+-------+-------|
  */
 
-struct dino_led {
-    int left_red : 1;
-    int left_green : 1;
-    int left_blue : 1;
-    int right_red : 1;
-    int right_green : 1;
-    int right_blue : 1;
+enum {
+    DINO_LEFT_R_P = 1 << 5,
+    DINO_LEFT_G_P = 1 << 4,
+    DINO_LEFT_B_P = 1 << 3,
+    DINO_RIGHT_R_P = 1 << 2,
+    DINO_RIGHT_G_P = 1 << 1,
+    DINO_RIGHT_B_P = 1 << 0,
 };
-
-static inline uint32_t dino_led_encode(const struct dino_led* leds) {
-    return ((leds->left_red & 1) << 5)
-        | ((leds->left_green & 1) << 4)
-        | ((leds->left_blue & 1) << 3)
-        | ((leds->right_red & 1) << 2)
-        | ((leds->right_green & 1) << 1)
-        | ((leds->right_blue & 1) << 0);
-}
-
-static inline struct dino_led dino_led_decode(uint32_t leds) {
-    return (struct dino_led) {
-        .left_red = (leds & 32) >> 5,
-        .left_green = (leds & 16) >> 4,
-        .left_blue = (leds & 8) >> 3,
-        .right_red = (leds & 4) >> 2,
-        .right_green = (leds & 2) >> 1,
-        .right_blue = leds & 1,
-    };
-}
 
 #ifdef __cplusplus
 }

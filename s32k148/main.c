@@ -40,6 +40,7 @@
 
 #include "./LPSPI.h"
 #include "./LPUART.h"
+#include "./led.h"
 
 extern uint32_t RxCODE;
 extern uint32_t RxID;
@@ -62,18 +63,7 @@ void PORT_init(void) {
     PORTE->PCR[4] |= PORT_PCR_MUX(5);  // Port E4: MUX = ALT5, CAN0_RX
     PORTE->PCR[5] |= PORT_PCR_MUX(5);  // Port E5: MUX = ALT5, CAN0_TX
 
-    // LEDs
-    PCC->PCCn[PCC_PORTA_INDEX] |= PCC_PCCn_CGC_MASK;
-    PTA->PDDR |= (1 << 1) | (1 << 0);
-    PORTA->PCR[0] = PORT_PCR_MUX(1);
-    PORTA->PCR[1] = PORT_PCR_MUX(1);
-    PTA->PSOR |= (1 << 1) | (1 << 0);
-    PTB->PDDR |= (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8);
-    PORTB->PCR[8] = PORT_PCR_MUX(1);
-    PORTB->PCR[9] = PORT_PCR_MUX(1);
-    PORTB->PCR[10] = PORT_PCR_MUX(1);
-    PORTB->PCR[11] = PORT_PCR_MUX(1);
-    PTB->PSOR |= (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8);
+    leds_init();
 }
 
 extern char* hex(uint32_t val);
@@ -96,44 +86,30 @@ int main(void) {
     LPUART1_transmit_string("Input character to echo...\n\r");
     LPSPI0_init_master();
 
+    // Clear any partial messages before reset
+    LPSPI0_transmit_8bits(0x7E);
+    (void)LPSPI0_receive_8bits();
+
     // Flash LEDs
     volatile size_t delay = 0;
-    PTA->PCOR |= (1 << 1) | (1 << 0);
-    PTB->PCOR |= 1 << 8;
+    leds_on(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
     for (delay = 0; delay < 5000000; delay++) { };
-    PTA->PSOR |= (1 << 1) | (1 << 0);
-    PTB->PSOR |= 1 << 8;
-    PTB->PCOR |= (1 << 11) | (1 << 10) | (1 << 9);
+    leds_off(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
+    leds_on(FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
     for (delay = 0; delay < 5000000; delay++) { };
-    PTB->PSOR |= (1 << 11) | (1 << 10) | (1 << 9);
-    struct dino_led leds = {
-        .left_red = true,
-        .left_green = true,
-        .left_blue = true,
-    };
+    leds_off(FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
     LedControl led_control = LED_CONTROL__INIT;
     led_control.leds_case = LED_CONTROL__LEDS_SET_LEDS;
-    led_control.set_leds = dino_led_encode(&leds);
+    led_control.set_leds = DINO_LEFT_R_P | DINO_LEFT_G_P | DINO_LEFT_B_P;
     Message message = MESSAGE__INIT;
     message.message_case = MESSAGE__MESSAGE_LED_CONTROL;
     message.led_control = &led_control;
-    LPSPI0_transmit_8bits(0x7E);
-    (void)LPSPI0_receive_8bits();
     spi_transmit_message(&message);
     for (delay = 0; delay < 5000000; delay++) { };
-    leds.left_red = false;
-    leds.left_green = false;
-    leds.left_blue = false;
-    leds.right_red = true;
-    leds.right_green = true;
-    leds.right_blue = true;
-    led_control.set_leds = dino_led_encode(&leds);
+    led_control.set_leds = DINO_RIGHT_R_P | DINO_RIGHT_G_P | DINO_RIGHT_B_P;
     spi_transmit_message(&message);
     for (delay = 0; delay < 5000000; delay++) { };
-    leds.right_red = false;
-    leds.right_green = false;
-    leds.right_blue = false;
-    led_control.set_leds = dino_led_encode(&leds);
+    led_control.set_leds = 0;
     spi_transmit_message(&message);
 
     for (;;) {

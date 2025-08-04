@@ -22,6 +22,10 @@ enum {
     DINO_RIGHT_R = 28,
     DINO_RIGHT_G = 27,
     DINO_RIGHT_B = 26,
+
+    LED_MASK = (1 << DINO_LEFT_R) | (1 << DINO_LEFT_G) | (1 << DINO_LEFT_B) | (1 << DINO_RIGHT_R) | (1 << DINO_RIGHT_G) | (1 << DINO_RIGHT_B),
+    LEFT_MASK = DINO_LEFT_R_P | DINO_LEFT_G_P | DINO_LEFT_B_P,
+    RIGHT_MASK = DINO_RIGHT_R_P | DINO_RIGHT_G_P | DINO_RIGHT_B_P,
 };
 
 int main() {
@@ -29,31 +33,13 @@ int main() {
     printf("Init\n");
     spi_init(spi1, 1000 * 1000);
     spi_set_slave(spi1, true);
-    gpio_set_function(9, GPIO_FUNC_SPI);
-    gpio_set_function(10, GPIO_FUNC_SPI);
-    gpio_set_function(11, GPIO_FUNC_SPI);
-    gpio_set_function(12, GPIO_FUNC_SPI);
+    gpio_set_function_masked((1 << 9) | (1 << 10) | (1 << 11) | (1 << 12), GPIO_FUNC_SPI);
     bi_decl(bi_4pins_with_func(9, 10, 11, 12, GPIO_FUNC_SPI));
 
     // LEDs
-    gpio_init(DINO_LEFT_R);
-    gpio_init(DINO_LEFT_G);
-    gpio_init(DINO_LEFT_B);
-    gpio_init(DINO_RIGHT_R);
-    gpio_init(DINO_RIGHT_G);
-    gpio_init(DINO_RIGHT_B);
-    gpio_set_dir(DINO_LEFT_R, true);
-    gpio_set_dir(DINO_LEFT_G, true);
-    gpio_set_dir(DINO_LEFT_B, true);
-    gpio_set_dir(DINO_RIGHT_R, true);
-    gpio_set_dir(DINO_RIGHT_G, true);
-    gpio_set_dir(DINO_RIGHT_B, true);
-    gpio_put(DINO_LEFT_R, true);
-    gpio_put(DINO_LEFT_G, true);
-    gpio_put(DINO_LEFT_B, true);
-    gpio_put(DINO_RIGHT_R, true);
-    gpio_put(DINO_RIGHT_G, true);
-    gpio_put(DINO_RIGHT_B, true);
+    gpio_init_mask(LED_MASK);
+    gpio_set_dir_out_masked(LED_MASK);
+    gpio_put_masked(LED_MASK, LED_MASK);
 
     uint8_t in_buf;
     while (true) {
@@ -71,13 +57,7 @@ int main() {
                 break;
             case MESSAGE__MESSAGE_LED_CONTROL:
                 // TODO: add support for and, or, xor
-                struct dino_led leds = dino_led_decode(message->led_control->set_leds);
-                gpio_put(DINO_LEFT_R, !leds.left_red);
-                gpio_put(DINO_LEFT_G, !leds.left_green);
-                gpio_put(DINO_LEFT_B, !leds.left_blue);
-                gpio_put(DINO_RIGHT_R, !leds.right_red);
-                gpio_put(DINO_RIGHT_G, !leds.right_green);
-                gpio_put(DINO_RIGHT_B, !leds.right_blue);
+                gpio_put_masked(LED_MASK, ~(((message->led_control->set_leds & LEFT_MASK) << 15) | ((message->led_control->set_leds & RIGHT_MASK) << 26)));
                 break;
             default:
                 printf("SPI: Unknown message type!\n");

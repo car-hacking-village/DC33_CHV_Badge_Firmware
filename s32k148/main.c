@@ -42,14 +42,6 @@
 #include "./LPUART.h"
 #include "./led.h"
 
-extern uint32_t RxCODE;
-extern uint32_t RxID;
-extern uint32_t RxLENGTH;
-extern uint32_t RxDATA[2];
-extern uint32_t RxTIMESTAMP;
-
-char data = 0;
-
 static void PORT_init(void) {
     PCC->PCCn[PCC_PORTB_INDEX] |= PCC_PCCn_CGC_MASK;  // Enable clock for PORTB
     PORTB->PCR[0] |= PORT_PCR_MUX(3);  // Port B0: MUX = ALT3, LPSPI0_PCS0
@@ -65,8 +57,6 @@ static void PORT_init(void) {
 
     leds_init();
 }
-
-extern char* hex(uint32_t val);
 
 void spi_cb_transmit_byte(uint8_t byte) {
     LPSPI0_transmit_8bits(byte);

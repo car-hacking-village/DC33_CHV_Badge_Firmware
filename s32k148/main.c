@@ -78,45 +78,49 @@ __attribute__((noreturn)) static void sw_reset(void) {
     for (;;) { }
 }
 
+static void delay(size_t ticks) {
+    for (volatile size_t delay = 0; delay < ticks; delay++) {
+    }
+}
+
+static void remote_leds(uint32_t leds) {
+    LedControl led_control = LED_CONTROL__INIT;
+    led_control.leds_case = LED_CONTROL__LEDS_SET_LEDS;
+    led_control.set_leds = leds;
+    Message message = MESSAGE__INIT;
+    message.message_case = MESSAGE__MESSAGE_LED_CONTROL;
+    message.led_control = &led_control;
+    spi_transmit_message(&message);
+}
+
 int main(void) {
     SOSC_init_8MHz();
     SPLL_init_160MHz();
     NormalRUNmode_80MHz();
-    FLEXCAN0_init();
     PORT_init();
 
-    FLEXCAN0_transmit_msg();
     LPUART1_init();
-    LPUART1_transmit_string("Running LPUART example\n\r");
-    LPUART1_transmit_string("Input character to echo...\n\r");
     LPSPI0_init_master();
 
     // Clear any partial messages before reset
     LPSPI0_transmit_8bits(0x7E);
     (void)LPSPI0_receive_8bits();
 
-    // Flash LEDs
+    // Flash LEDs (init sequence)
     leds_on(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
-    for (volatile size_t delay = 0; delay < 5000000; delay++) { };
+    delay(5000000);
     leds_off(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
     leds_on(FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
-    for (volatile size_t delay = 0; delay < 5000000; delay++) { };
+    delay(5000000);
     leds_off(FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
-    LedControl led_control = LED_CONTROL__INIT;
-    led_control.leds_case = LED_CONTROL__LEDS_SET_LEDS;
-    led_control.set_leds = DINO_LEFT_R_P | DINO_LEFT_G_P | DINO_LEFT_B_P;
-    Message message = MESSAGE__INIT;
-    message.message_case = MESSAGE__MESSAGE_LED_CONTROL;
-    message.led_control = &led_control;
-    spi_transmit_message(&message);
-    for (volatile size_t delay = 0; delay < 5000000; delay++) { };
-    led_control.set_leds = DINO_RIGHT_R_P | DINO_RIGHT_G_P | DINO_RIGHT_B_P;
-    spi_transmit_message(&message);
-    for (volatile size_t delay = 0; delay < 5000000; delay++) { };
-    led_control.set_leds = 0;
-    spi_transmit_message(&message);
+    remote_leds(DINO_LEFT_R_P | DINO_LEFT_G_P | DINO_LEFT_B_P);
+    delay(5000000);
+    remote_leds(DINO_RIGHT_R_P | DINO_RIGHT_G_P | DINO_RIGHT_B_P);
+    delay(5000000);
+    remote_leds(0);
 
-    for (volatile size_t tick = 0;; tick++) {
+    // Flash LEDs (four pattern loop)
+    for (size_t tick = 0;; tick++) {
         if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
             // TODO: start an SPI transfer
             char c = LPUART1_receive_char();
@@ -124,10 +128,136 @@ int main(void) {
                 sw_reset();
             }
         }
-        if (tick & 0x00100000) {
-            leds_on(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
-        } else {
-            leds_off(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
+        if ((tick & 0x0007FFFF) == 1) {
+            switch ((tick & 0x06000000) >> 25) {
+            case 0:
+                switch (((tick & 0xFFF00000) >> 20) % 6) {
+                case 0:
+                    leds_on(FRED_LEFT_R | FRED_RIGHT_R | FRED_LEFT_B | FRED_RIGHT_B);
+                    remote_leds(DINO_LEFT_R_P | DINO_RIGHT_R_P | DINO_LEFT_B_P | DINO_RIGHT_B_P);
+                    break;
+                case 1:
+                    leds_off(FRED_LEFT_B | FRED_RIGHT_B);
+                    remote_leds(DINO_LEFT_R_P | DINO_RIGHT_R_P);
+                    break;
+                case 2:
+                    leds_on(FRED_LEFT_G | FRED_RIGHT_G);
+                    remote_leds(DINO_LEFT_R_P | DINO_RIGHT_R_P | DINO_LEFT_G_P | DINO_RIGHT_G_P);
+                    break;
+                case 3:
+                    leds_off(FRED_LEFT_R | FRED_RIGHT_R);
+                    remote_leds(DINO_LEFT_G_P | DINO_RIGHT_G_P);
+                    break;
+                case 4:
+                    leds_on(FRED_LEFT_B | FRED_RIGHT_B);
+                    remote_leds(DINO_LEFT_G_P | DINO_RIGHT_G_P | DINO_LEFT_B_P | DINO_RIGHT_B_P);
+                    break;
+                case 5:
+                    leds_off(FRED_LEFT_G | FRED_RIGHT_G);
+                    remote_leds(DINO_LEFT_B_P | DINO_RIGHT_B_P);
+                    break;
+                }
+                break;
+            case 1:
+                if (tick & 0x00100000) {
+                    leds_on(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B | FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
+                    remote_leds(DINO_LEFT_R_P | DINO_LEFT_G_P | DINO_LEFT_B_P | DINO_RIGHT_R_P | DINO_RIGHT_G_P | DINO_RIGHT_B_P);
+                } else {
+                    leds_off(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B | FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
+                    remote_leds(0);
+                }
+                break;
+            case 2:
+                if (tick & 0x00080000) {
+                    leds_on(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
+                    leds_off(FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
+                    remote_leds(DINO_LEFT_R_P | DINO_LEFT_G_P | DINO_LEFT_B_P);
+                } else {
+                    leds_on(FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
+                    leds_off(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
+                    remote_leds(DINO_RIGHT_R_P | DINO_RIGHT_G_P | DINO_RIGHT_B_P);
+                }
+                break;
+            case 3:
+                switch (((tick & 0xFFF80000) >> 19) % 24) {
+                case 0:
+                    leds_on(FRED_LEFT_R);
+                    leds_off(FRED_LEFT_G | FRED_LEFT_B | FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
+                    remote_leds(0);
+                    break;
+                case 1:
+                    leds_on(FRED_LEFT_G);
+                    break;
+                case 2:
+                    leds_off(FRED_LEFT_R);
+                    break;
+                case 3:
+                    leds_on(FRED_LEFT_B);
+                    break;
+                case 4:
+                    leds_off(FRED_LEFT_G);
+                    break;
+                case 5:
+                    leds_on(FRED_RIGHT_R);
+                    break;
+                case 6:
+                    leds_off(FRED_LEFT_B);
+                    break;
+                case 7:
+                    leds_on(FRED_RIGHT_G);
+                    break;
+                case 8:
+                    leds_off(FRED_RIGHT_R);
+                    break;
+                case 9:
+                    leds_on(FRED_RIGHT_B);
+                    break;
+                case 10:
+                    leds_off(FRED_RIGHT_G);
+                    break;
+                case 11:
+                    remote_leds(DINO_LEFT_R_P);
+                    break;
+                case 12:
+                    leds_off(FRED_RIGHT_B);
+                    break;
+                case 13:
+                    remote_leds(DINO_LEFT_R_P | DINO_LEFT_G_P);
+                    break;
+                case 14:
+                    remote_leds(DINO_LEFT_G_P);
+                    break;
+                case 15:
+                    remote_leds(DINO_LEFT_G_P | DINO_LEFT_B_P);
+                    break;
+                case 16:
+                    remote_leds(DINO_LEFT_B_P);
+                    break;
+                case 17:
+                    remote_leds(DINO_LEFT_B_P | DINO_RIGHT_R_P);
+                    break;
+                case 18:
+                    remote_leds(DINO_RIGHT_R_P);
+                    break;
+                case 19:
+                    remote_leds(DINO_RIGHT_R_P | DINO_RIGHT_G_P);
+                    break;
+                case 20:
+                    remote_leds(DINO_RIGHT_G_P);
+                    break;
+                case 21:
+                    remote_leds(DINO_RIGHT_G_P | DINO_RIGHT_B_P);
+                    break;
+                case 22:
+                    remote_leds(DINO_RIGHT_B_P);
+                    break;
+                case 23:
+                    leds_on(FRED_LEFT_R);
+                    remote_leds(DINO_RIGHT_B_P);
+                    break;
+                }
+                break;
+            }
         }
     }
 }

@@ -50,7 +50,7 @@ extern uint32_t RxTIMESTAMP;
 
 char data = 0;
 
-void PORT_init(void) {
+static void PORT_init(void) {
     PCC->PCCn[PCC_PORTB_INDEX] |= PCC_PCCn_CGC_MASK;  // Enable clock for PORTB
     PORTB->PCR[0] |= PORT_PCR_MUX(3);  // Port B0: MUX = ALT3, LPSPI0_PCS0
     PORTB->PCR[1] |= PORT_PCR_MUX(3);  // Port B1: MUX = ALT3, LPSPI0_SOUT
@@ -73,6 +73,11 @@ void spi_cb_transmit_byte(uint8_t byte) {
     (void)LPSPI0_receive_8bits();
 }
 
+__attribute__((noreturn)) static void sw_reset(void) {
+    S32_SCB->AIRCR = S32_SCB_AIRCR_VECTKEY(0x5FA) | S32_SCB_AIRCR_SYSRESETREQ_MASK;
+    for (;;) { }
+}
+
 int main(void) {
     SOSC_init_8MHz();
     SPLL_init_160MHz();
@@ -91,12 +96,11 @@ int main(void) {
     (void)LPSPI0_receive_8bits();
 
     // Flash LEDs
-    volatile size_t delay = 0;
     leds_on(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
-    for (delay = 0; delay < 5000000; delay++) { };
+    for (volatile size_t delay = 0; delay < 5000000; delay++) { };
     leds_off(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
     leds_on(FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
-    for (delay = 0; delay < 5000000; delay++) { };
+    for (volatile size_t delay = 0; delay < 5000000; delay++) { };
     leds_off(FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
     LedControl led_control = LED_CONTROL__INIT;
     led_control.leds_case = LED_CONTROL__LEDS_SET_LEDS;
@@ -105,30 +109,25 @@ int main(void) {
     message.message_case = MESSAGE__MESSAGE_LED_CONTROL;
     message.led_control = &led_control;
     spi_transmit_message(&message);
-    for (delay = 0; delay < 5000000; delay++) { };
+    for (volatile size_t delay = 0; delay < 5000000; delay++) { };
     led_control.set_leds = DINO_RIGHT_R_P | DINO_RIGHT_G_P | DINO_RIGHT_B_P;
     spi_transmit_message(&message);
-    for (delay = 0; delay < 5000000; delay++) { };
+    for (volatile size_t delay = 0; delay < 5000000; delay++) { };
     led_control.set_leds = 0;
     spi_transmit_message(&message);
 
-    for (;;) {
-        uint32_t flags = CAN0->IFLAG1;
-        if (flags) {
-            LPUART1_transmit_string(hex(flags));
+    for (volatile size_t tick = 0;; tick++) {
+        if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
+            // TODO: start an SPI transfer
+            char c = LPUART1_receive_char();
+            if (c == 'B') {
+                sw_reset();
+            }
         }
-        if ((flags >> 4) & 1) {
-            LPUART1_transmit_string("CAN frame received!\n\r");
-            FLEXCAN0_receive_msg();
-            FLEXCAN0_transmit_msg();
-            CanFrame can_frame = CAN_FRAME__INIT;
-            can_frame.arbitration_id = RxID;
-            can_frame.dlc = RxLENGTH;
-            can_frame.data.data = (uint8_t*)RxDATA;
-            can_frame.data.len = RxLENGTH;
-            message.message_case = MESSAGE__MESSAGE_CAN_FRAME;
-            message.can_frame = &can_frame;
-            spi_transmit_message(&message);
+        if (tick & 0x00100000) {
+            leds_on(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
+        } else {
+            leds_off(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
         }
     }
 }

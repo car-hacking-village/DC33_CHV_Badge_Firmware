@@ -43,7 +43,7 @@ void LPUART1_init(void) {
 }
 
 void LPUART1_transmit_char(char send) {
-    while ((LPUART1->STAT & LPUART_STAT_TDRE_MASK) >> LPUART_STAT_TDRE_SHIFT == 0) { }
+    while (!(LPUART1->STAT & LPUART_STAT_TDRE_MASK)) { }
     LPUART1->DATA = send;
 }
 
@@ -56,14 +56,8 @@ void LPUART1_transmit_string(char data_string[]) {
 }
 
 char LPUART1_receive_char(void) {
-    char receive;
-    if (LPUART1->STAT & LPUART_STAT_OR_MASK) {
-        PTB->PCOR = 1 << 9;
-    }
-    while ((LPUART1->STAT & LPUART_STAT_RDRF_MASK) >> LPUART_STAT_RDRF_SHIFT == 0) { }
-    receive = LPUART1->DATA;
-    PTB->PTOR = 1 << 11;
-    return receive;
+    while (!(LPUART1->STAT & LPUART_STAT_RDRF_MASK)) { }
+    return LPUART1->DATA;
 }
 
 void LPUART1_receive_and_echo_char(void) {

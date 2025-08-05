@@ -33,6 +33,16 @@ cmake -S . -B build -G Ninja
 ninja -C build
 ```
 
+## Bootloader LED Guide
+
+- Fred Left Red - waiting for download (few seconds after board is
+  powered on)
+- Fred Left Blue - download started
+- Fred Right Red - toggled when UART byte is received
+- Fred Right Green - toggled when a successful SREC phrase was finished
+- Fred Right Blue - UART RX overflow
+- Fred Left+Right Red Blinking - no firmware installed
+
 ## Dev Board Setup
 
 Use a Raspberry Pi Pico (1) board and an NXP S32K148-Q176 board. Ensure

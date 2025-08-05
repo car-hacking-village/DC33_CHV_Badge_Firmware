@@ -69,48 +69,18 @@
 #include <fsl_flash_driver_c90tfs.h>
 
 #include "./LPUART.h"
+#include "./led.h"
 
 enum {
     APP_START_ADDRESS = 0x2000,
 };
 
-void PORT_init(void) {
+static void PORT_init(void) {
     PCC->PCCn[PCC_PORTC_INDEX] |= PCC_PCCn_CGC_MASK;  // Enable clock for PORTC
     PORTC->PCR[6] |= PORT_PCR_MUX(2);  // Port C6: MUX = ALT2, UART1 RX
     PORTC->PCR[7] |= PORT_PCR_MUX(2);  // Port C7: MUX = ALT2, UART1 TX
 
-    // LEDs
-    PCC->PCCn[PCC_PORTA_INDEX] |= PCC_PCCn_CGC_MASK;
-    PTA->PDDR |= (1 << 1) | (1 << 0);
-    PORTA->PCR[0] = PORT_PCR_MUX(1);
-    PORTA->PCR[1] = PORT_PCR_MUX(1);
-    PTA->PSOR = (1 << 1) | (1 << 0);
-    PCC->PCCn[PCC_PORTB_INDEX] |= PCC_PCCn_CGC_MASK;
-    PTB->PDDR |= (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8);
-    PORTB->PCR[8] = PORT_PCR_MUX(1);
-    PORTB->PCR[9] = PORT_PCR_MUX(1);
-    PORTB->PCR[10] = PORT_PCR_MUX(1);
-    PORTB->PCR[11] = PORT_PCR_MUX(1);
-    PTB->PSOR = (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8);
-}
-
-void PORT_deinit(void) {
-    PTA->PCOR = (1 << 1) | (1 << 0);
-    PTA->PDDR = 0;
-    PCC->PCCn[PCC_PORTA_INDEX] &= ~PCC_PCCn_CGC_MASK;
-    PTB->PCOR = (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8);
-    PTB->PDDR = 0;
-    PCC->PCCn[PCC_PORTB_INDEX] &= ~PCC_PCCn_CGC_MASK;
-
-    while ((LPUART1->STAT & LPUART_STAT_TDRE_MASK) >> LPUART_STAT_TDRE_SHIFT == 0) { }
-    while ((LPUART1->STAT & LPUART_STAT_TC_MASK) >> LPUART_STAT_TC_SHIFT == 0) { }
-    LPUART1->CTRL = 0;
-    LPUART1->BAUD = 0;
-    PCC->PCCn[PCC_LPUART1_INDEX] &= ~PCC_PCCn_CGC_MASK;
-
-    PORTC->PCR[6] |= PORT_PCR_MUX(1);
-    PORTC->PCR[7] |= PORT_PCR_MUX(1);
-    PCC->PCCn[PCC_PORTC_INDEX] &= ~PCC_PCCn_CGC_MASK;
+    leds_init();
 }
 
 void JumpToUserApplication(unsigned int userSP, unsigned int userStartup) {
@@ -130,9 +100,19 @@ void JumpToUserApplication(unsigned int userSP, unsigned int userStartup) {
     __asm("mov pc, r1");
 }
 
+static inline char read_char(void) {
+    char receive;
+    if (LPUART1->STAT & LPUART_STAT_OR_MASK) {
+        leds_on(FRED_RIGHT_B);
+    }
+    receive = LPUART1_receive_char();
+    leds_toggle(FRED_RIGHT_R);
+    return receive;
+}
+
 static void junk(void) {
     for (;;) {
-        switch (LPUART1_receive_char()) {
+        switch (read_char()) {
         case '\r':
         case '\n':
             LPUART1_transmit_char('!');
@@ -145,7 +125,7 @@ static void junk(void) {
 
 static void ignore(void) {
     for (;;) {
-        switch (LPUART1_receive_char()) {
+        switch (read_char()) {
         case '\r':
         case '\n':
             LPUART1_transmit_char('.');
@@ -160,7 +140,7 @@ static unsigned char buf[256] __attribute__((aligned(8)));
 
 static int hex(void) {
     uint8_t val = 0;
-    char c = LPUART1_receive_char();
+    char c = read_char();
     switch (c) {
     case '0' ... '9':
         val = (c - '0') << 4;
@@ -176,7 +156,7 @@ static int hex(void) {
         junk();
         return -1;
     }
-    c = LPUART1_receive_char();
+    c = read_char();
     switch (c) {
     case '0' ... '9':
         val |= (c - '0') & 0xF;
@@ -308,10 +288,10 @@ static void handle_s1(void) {
             break;
         }
     }
-    switch (LPUART1_receive_char()) {
+    switch (read_char()) {
     case '\r':
     case '\n':
-        PTB->PTOR = 1 << 10;
+        leds_toggle(FRED_RIGHT_G);
         flash(ptr, buf, b - buf);
         LPUART1_transmit_char('.');
         break;
@@ -372,10 +352,10 @@ static void handle_s2(void) {
             break;
         }
     }
-    switch (LPUART1_receive_char()) {
+    switch (read_char()) {
     case '\r':
     case '\n':
-        PTB->PTOR = 1 << 10;
+        leds_toggle(FRED_RIGHT_G);
         flash(ptr, buf, b - buf);
         LPUART1_transmit_char('.');
         break;
@@ -440,10 +420,10 @@ static void handle_s3(void) {
             break;
         }
     }
-    switch (LPUART1_receive_char()) {
+    switch (read_char()) {
     case '\r':
     case '\n':
-        PTB->PTOR = 1 << 10;
+        leds_toggle(FRED_RIGHT_G);
         flash(ptr, buf, b - buf);
         LPUART1_transmit_char('.');
         break;
@@ -454,7 +434,7 @@ static void handle_s3(void) {
 }
 
 static bool handle_s(void) {
-    switch (LPUART1_receive_char()) {
+    switch (read_char()) {
     case '0':
         ignore();
         break;
@@ -491,6 +471,20 @@ static bool handle_s(void) {
     return false;
 }
 
+__attribute__((noreturn)) static void boot(void) {
+    LPUART1_transmit_char('=');
+    JumpToUserApplication(*((uint32_t*)APP_START_ADDRESS), *((uint32_t*)(APP_START_ADDRESS + 4)));
+    // failed to boot
+    leds_off(FRED_LEFT_B | FRED_RIGHT_R | FRED_RIGHT_G);
+    for (volatile size_t tick = 0;; tick++) {
+        if (tick & 0x00100000) {
+            leds_on(FRED_LEFT_R | FRED_RIGHT_R);
+        } else {
+            leds_off(FRED_LEFT_R | FRED_RIGHT_R);
+        }
+    };
+}
+
 int main(void) {
     SOSC_init_8MHz();
     SPLL_init_160MHz();
@@ -499,20 +493,16 @@ int main(void) {
 
     LPUART1_init();
     LPUART1_transmit_char('?');
-    PTB->PCOR = 1 << 8;
+    leds_on(FRED_LEFT_R);
 
     for (volatile size_t delay = 0; delay < 5000000; delay++) {
-        if ((LPUART1->STAT & LPUART_STAT_RDRF_MASK) >> LPUART_STAT_RDRF_SHIFT) {
-            PTB->PSOR = 1 << 8;
-            PTA->PCOR = 1 << 0;
+        if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
+            leds_toggle(FRED_LEFT_R | FRED_LEFT_B);
             for (;;) {
-                switch (LPUART1_receive_char()) {
+                switch (read_char()) {
                 case 'S':
                     if (handle_s()) {
-                        LPUART1_transmit_char('=');
-                        PORT_deinit();
-                        JumpToUserApplication(*((uint32_t*)APP_START_ADDRESS), *((uint32_t*)(APP_START_ADDRESS + 4)));
-                        for (;;) { };
+                        boot();
                     }
                     break;
                 case '\r':
@@ -526,9 +516,6 @@ int main(void) {
         }
     }
 
-    LPUART1_transmit_char('=');
-    PORT_deinit();
-    JumpToUserApplication(*((uint32_t*)APP_START_ADDRESS), *((uint32_t*)(APP_START_ADDRESS + 4)));
-    for (;;) { };
+    boot();
     return 0;
 }

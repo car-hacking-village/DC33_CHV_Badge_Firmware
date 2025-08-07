@@ -32,7 +32,6 @@
 
 #include <FlexCAN.h>
 #include <S32K148.h>
-#include <clocks_and_modes.h>
 #include <dc33_fw_spi.pb-c.h>
 #include <device_registers.h>
 #include <led.h>
@@ -40,6 +39,7 @@
 
 #include "./LPSPI.h"
 #include "./LPUART.h"
+#include "./clocks_and_modes.h"
 #include "./led.h"
 
 static void PORT_init(void) {

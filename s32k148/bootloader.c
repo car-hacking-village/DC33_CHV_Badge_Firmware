@@ -495,9 +495,13 @@ int main(void) {
 
     for (volatile size_t delay = 0; delay < 5000000; delay++) {
         if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
+            char receive = LPUART1_receive_char();
+            if (receive != 'S') {
+                continue;
+            }
             leds_toggle(FRED_LEFT_R | FRED_LEFT_B);
-            for (;;) {
-                switch (read_char()) {
+            for (receive = 'S';; receive = read_char()) {
+                switch (receive) {
                 case 'S':
                     if (handle_s()) {
                         boot();

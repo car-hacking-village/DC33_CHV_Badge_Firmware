@@ -30,11 +30,11 @@ add_executable(
   main.c
   LPSPI.c
   LPUART.c
-  clocks_and_modes.c
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/startup.c"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/startup_S32K148.S"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/system_S32K148.c"
   "${COOKBOOK_PATH}/S32K148_Project_FlexCan/src/FlexCAN.c"
+  "${COOKBOOK_PATH}/S32K148_Project_FlexCan/src/clocks_and_modes.c"
 )
 target_compile_options(
   dc33_fw_s32k148
@@ -90,11 +90,11 @@ add_executable(
   dc33_fw_s32k148_bootloader
   bootloader.c
   LPUART.c
-  clocks_and_modes.c
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Startup_Code/startup.c"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Startup_Code/startup_S32K148.S"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/Project_Settings/Startup_Code/system_S32K148.c"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/drivers/fsl_flash_driver_c90tfs.c"
+  "${COOKBOOK_PATH}/S32K148_Project_LPUART/src/clocks_and_modes.c"
 )
 target_compile_options(
   dc33_fw_s32k148_bootloader
@@ -122,6 +122,7 @@ target_include_directories(
   PRIVATE
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/include"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Bootloader_Software/S32K148_bootloader/src/drivers/inc"
+  "${COOKBOOK_PATH}/S32K148_Project_LPUART/src"
 )
 target_link_options(
   dc33_fw_s32k148_bootloader

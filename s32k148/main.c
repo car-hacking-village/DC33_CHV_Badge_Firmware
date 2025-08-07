@@ -32,7 +32,6 @@
 
 #include <FlexCAN.h>
 #include <S32K148.h>
-#include <clocks_and_modes.h>
 #include <dc33_fw_spi.pb-c.h>
 #include <device_registers.h>
 #include <led.h>
@@ -40,6 +39,7 @@
 
 #include "./LPSPI.h"
 #include "./LPUART.h"
+#include "./clocks_and_modes.h"
 #include "./led.h"
 
 static void PORT_init(void) {
@@ -84,9 +84,7 @@ static void remote_leds(uint32_t leds) {
 }
 
 int main(void) {
-    SOSC_init_8MHz();
-    SPLL_init_160MHz();
-    NormalRUNmode_80MHz();
+    SlowRUNmode_48MHz();
     PORT_init();
 
     LPUART1_init();

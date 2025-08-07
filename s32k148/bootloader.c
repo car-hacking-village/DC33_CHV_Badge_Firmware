@@ -64,11 +64,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <clocks_and_modes.h>
 #include <device_registers.h>
 #include <fsl_flash_driver_c90tfs.h>
 
 #include "./LPUART.h"
+#include "./clocks_and_modes.h"
 #include "./led.h"
 
 enum {
@@ -486,9 +486,7 @@ __attribute__((noreturn)) static void boot(void) {
 }
 
 int main(void) {
-    SOSC_init_8MHz();
-    SPLL_init_160MHz();
-    NormalRUNmode_80MHz();
+    SlowRUNmode_48MHz();
     PORT_init();
 
     LPUART1_init();

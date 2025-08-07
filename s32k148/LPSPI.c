@@ -36,7 +36,7 @@
 
 void LPSPI0_init_master(void) {
     PCC->PCCn[PCC_LPSPI0_INDEX] = 0;
-    PCC->PCCn[PCC_LPSPI0_INDEX] = PCC_PCCn_PR_MASK | PCC_PCCn_CGC_MASK | PCC_PCCn_PCS(6);
+    PCC->PCCn[PCC_LPSPI0_INDEX] = PCC_PCCn_PR_MASK | PCC_PCCn_CGC_MASK | PCC_PCCn_PCS(3);
     LPSPI0->CR = 0x00000000;
     LPSPI0->IER = 0x00000000;
     LPSPI0->DER = 0x00000000;
@@ -49,15 +49,13 @@ void LPSPI0_init_master(void) {
 }
 
 void LPSPI0_transmit_8bits(uint8_t send) {
-    while ((LPSPI0->SR & LPSPI_SR_TDF_MASK) >> LPSPI_SR_TDF_SHIFT == 0)
-        ;
+    while ((LPSPI0->SR & LPSPI_SR_TDF_MASK) >> LPSPI_SR_TDF_SHIFT == 0) { }
     LPSPI0->TDR = send;
     LPSPI0->SR |= LPSPI_SR_TDF_MASK;
 }
 
 uint8_t LPSPI0_receive_8bits(void) {
-    while ((LPSPI0->SR & LPSPI_SR_RDF_MASK) >> LPSPI_SR_RDF_SHIFT == 0)
-        ;
+    while ((LPSPI0->SR & LPSPI_SR_RDF_MASK) >> LPSPI_SR_RDF_SHIFT == 0) { }
     uint8_t recieve = LPSPI0->RDR;
     LPSPI0->SR |= LPSPI_SR_RDF_MASK;
     return recieve;

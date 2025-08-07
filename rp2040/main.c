@@ -10,6 +10,7 @@
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
 #include "hardware/spi.h"
+#include "hardware/uart.h"
 #include "led.h"
 #include "spi.h"
 #include "dc33_fw_spi.pb-c.h"
@@ -31,6 +32,9 @@ enum {
 int main() {
     stdio_init_all();
     printf("Init\n");
+    gpio_set_function(5, UART_FUNCSEL_NUM(uart1, 5));
+    gpio_set_function(6, UART_FUNCSEL_NUM(uart1, 6));
+    uart_init(uart1, 38400);
     spi_init(spi1, 1000 * 1000);
     spi_set_slave(spi1, true);
     gpio_set_function_masked((1 << 9) | (1 << 10) | (1 << 11) | (1 << 12), GPIO_FUNC_SPI);

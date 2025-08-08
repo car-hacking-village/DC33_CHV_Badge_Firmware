@@ -20,10 +20,20 @@ else()
   add_subdirectory(../common common)
 endif()
 
-add_executable(dc33_fw_rp2040 main.c)
+add_executable(dc33_fw_rp2040 main.c usb_descriptors.c)
 target_include_directories(dc33_fw_rp2040 PRIVATE .)
-target_link_libraries(dc33_fw_rp2040 pico_stdlib hardware_spi dc33_fw_common FreeRTOS-Kernel FreeRTOS-Kernel-Static)
-pico_enable_stdio_usb(dc33_fw_rp2040 1)
+target_link_libraries(
+  dc33_fw_rp2040
+  dc33_fw_common
+  FreeRTOS-Kernel
+  FreeRTOS-Kernel-Static
+  hardware_spi
+  pico_stdlib
+  pico_unique_id
+  tinyusb_board
+  tinyusb_device
+)
+pico_enable_stdio_usb(dc33_fw_rp2040 0)
 pico_enable_stdio_uart(dc33_fw_rp2040 0)
 pico_add_extra_outputs(dc33_fw_rp2040)
 

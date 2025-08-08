@@ -9,13 +9,16 @@
 #include <stdio.h>
 
 #include <FreeRTOS.h>
+#include <bsp/board_api.h>
 #include <hardware/spi.h>
 #include <hardware/uart.h>
 #include <pico/binary_info.h>
 #include <pico/stdlib.h>
 #include <task.h>
+#include <tusb.h>
 
 #include "dc33_fw_spi.pb-c.h"
+#include "device/usbd.h"
 #include "led.h"
 #include "spi.h"
 
@@ -51,6 +54,7 @@ void main_task(void* param) {
 
     uint8_t in_buf;
     while (true) {
+        tud_task();
         spi_read_blocking(spi1, 0x7e, &in_buf, 1);
         bool message_ready = spi_handle_byte(in_buf);
         if (message_ready) {
@@ -77,6 +81,11 @@ void main_task(void* param) {
 }
 
 int main(void) {
+    board_init();
+    tusb_init();
+    if (board_init_after_tusb) {
+        board_init_after_tusb();
+    }
     stdio_init_all();
     printf("Main\n");
     static StackType_t stack[configMINIMAL_STACK_SIZE * 2];

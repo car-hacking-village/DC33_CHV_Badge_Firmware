@@ -8,6 +8,12 @@ project(dc33_fw_rp2040)
 
 pico_sdk_init()
 
+if (NOT DEFINED ENV{FREERTOS_KERNEL_PATH})
+    message(FATAL_ERROR "You must set FREERTOS_KERNEL_PATH")
+endif()
+
+include("$ENV{FREERTOS_KERNEL_PATH}/portable/ThirdParty/GCC/RP2040/FreeRTOS_Kernel_import.cmake")
+
 if (DEFINED ENV{FW_COMMON_SRC})
   add_subdirectory("$ENV{FW_COMMON_SRC}" common)
 else()

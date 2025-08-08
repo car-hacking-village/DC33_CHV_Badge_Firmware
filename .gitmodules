@@ -1,3 +1,6 @@
+[submodule "FreeRTOS-Kernel"]
+	path = vendor/FreeRTOS-Kernel
+	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
 [submodule "bootloader"]
 	path = vendor/bootloader
 	url = https://github.com/nxp-auto-support/AN12218_sw.git

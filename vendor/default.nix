@@ -4,6 +4,13 @@
 }:
 
 {
+  FreeRTOS-Kernel = fetchFromGitHub {
+    owner = "FreeRTOS";
+    repo = "FreeRTOS-Kernel";
+    tag = "V11.1.0";
+    hash = "sha256-wcayA4YCfHGD6pwzG40IW2L0RhZ6KwumtbwNZpxUk7s=";
+  };
+
   bootloader = fetchFromGitHub {
     owner = "nxp-auto-support";
     repo = "AN12218_sw";

@@ -4,16 +4,20 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <stdio.h>
-#include <stddef.h>
 #include <inttypes.h>
-#include "pico/stdlib.h"
-#include "pico/binary_info.h"
-#include "hardware/spi.h"
-#include "hardware/uart.h"
+#include <stddef.h>
+#include <stdio.h>
+
+#include <FreeRTOS.h>
+#include <hardware/spi.h>
+#include <hardware/uart.h>
+#include <pico/binary_info.h>
+#include <pico/stdlib.h>
+#include <task.h>
+
+#include "dc33_fw_spi.pb-c.h"
 #include "led.h"
 #include "spi.h"
-#include "dc33_fw_spi.pb-c.h"
 
 enum {
     DINO_LEFT_R = 20,
@@ -29,8 +33,8 @@ enum {
     RIGHT_MASK = DINO_RIGHT_R_P | DINO_RIGHT_G_P | DINO_RIGHT_B_P,
 };
 
-int main() {
-    stdio_init_all();
+void main_task(void* param) {
+    (void)param;
     printf("Init\n");
     gpio_set_function(5, UART_FUNCSEL_NUM(uart1, 5));
     gpio_set_function(6, UART_FUNCSEL_NUM(uart1, 6));
@@ -70,4 +74,14 @@ int main() {
             message__free_unpacked(message, NULL);
         }
     }
+}
+
+int main(void) {
+    stdio_init_all();
+    printf("Main\n");
+    static StackType_t stack[configMINIMAL_STACK_SIZE * 2];
+    static StaticTask_t task;
+    TaskHandle_t handle = xTaskCreateStatic(main_task, "main_task", configMINIMAL_STACK_SIZE * 2, NULL, 5, stack, &task);
+    vTaskStartScheduler();
+    for (;;) { }
 }

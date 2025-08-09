@@ -69,7 +69,7 @@
 
 #include "./LPUART.h"
 #include "./clocks_and_modes.h"
-#include "./led.h"
+#include "./leds.h"
 
 enum {
     APP_START_ADDRESS = 0x2000,

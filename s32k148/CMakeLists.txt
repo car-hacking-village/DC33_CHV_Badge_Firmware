@@ -7,6 +7,10 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 project(dc33_fw_s32k148 C CXX ASM)
 
+if (NOT DEFINED ENV{FREERTOS_KERNEL_PATH})
+    message(FATAL_ERROR "You must set FREERTOS_KERNEL_PATH")
+endif()
+
 if(DEFINED ENV{FW_COMMON_SRC})
   add_subdirectory("$ENV{FW_COMMON_SRC}" common)
 else()
@@ -31,6 +35,7 @@ add_executable(
   LPSPI.c
   LPUART.c
   clocks_and_modes.c
+  "$ENV{FREERTOS_KERNEL_PATH}/portable/GCC/ARM_CM4F/port.c"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/startup.c"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/startup_S32K148.S"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/system_S32K148.c"
@@ -51,18 +56,30 @@ target_compile_options(
   -fmessage-length=0
   -fno-exceptions
   -mcpu=cortex-m4
+  -mfloat-abi=hard
+  -mfpu=fpv4-sp-d16
   -mthumb
   -specs=nosys.specs
   $<$<COMPILE_LANGUAGE:ASM>:-x assembler-with-cpp>
   $<$<COMPILE_LANGUAGE:C>:-std=gnu99>
   $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++23>
 )
-target_compile_options(dc33_fw_common PRIVATE -mcpu=cortex-m4)
+target_compile_options(
+  dc33_fw_common
+  PRIVATE
+  -mcpu=cortex-m4
+  -mfloat-abi=hard
+  -mfpu=fpv4-sp-d16
+  -mthumb
+)
 target_include_directories(
   dc33_fw_s32k148
   PRIVATE
+  "$ENV{FREERTOS_KERNEL_PATH}/include"
+  "$ENV{FREERTOS_KERNEL_PATH}/portable/GCC/ARM_CM4F"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/include"
   "${COOKBOOK_PATH}/S32K148_Project_FlexCan/src"
+  .
 )
 target_link_libraries(dc33_fw_s32k148 dc33_fw_common)
 target_link_options(
@@ -73,6 +90,8 @@ target_link_options(
   -T "${CMAKE_CURRENT_SOURCE_DIR}/main.ld"
   -Wl,-gc-sections
   -mcpu=cortex-m4
+  -mfloat-abi=hard
+  -mfpu=fpv4-sp-d16
   -mthumb
   -n
   -specs=nosys.specs

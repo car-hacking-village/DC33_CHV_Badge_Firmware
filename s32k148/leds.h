@@ -30,8 +30,8 @@
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LED_H_
-#define LED_H_
+#ifndef LEDS_H_
+#define LEDS_H_
 
 #ifdef __cplusplus
 extern "C" {

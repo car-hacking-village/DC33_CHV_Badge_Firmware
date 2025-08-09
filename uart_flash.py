@@ -14,6 +14,8 @@ with open(sys.argv[2], "r") as f:
 with serial.Serial(sys.argv[1], baudrate=38400) as f:
     print("Waiting for bootloader...")
     f.reset_input_buffer()
+    f.write(b"B")
+    f.flush()
     while f.read() != b"?":
         pass
     print("Bootloader connected, starting download:")

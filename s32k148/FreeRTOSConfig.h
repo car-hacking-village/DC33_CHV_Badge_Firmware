@@ -137,5 +137,6 @@ to exclude the API function. */
 
 /* A header file that defines trace macro can be included here. */
 #define configCPU_CLOCK_HZ                      ( ( unsigned long ) 48000000 )
+#define configKERNEL_PROVIDED_STATIC_MEMORY     1
 
 #endif /* FREERTOS_CONFIG_H */

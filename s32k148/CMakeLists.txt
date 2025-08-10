@@ -35,7 +35,11 @@ add_executable(
   LPSPI.c
   LPUART.c
   clocks_and_modes.c
+  "$ENV{FREERTOS_KERNEL_PATH}/list.c"
   "$ENV{FREERTOS_KERNEL_PATH}/portable/GCC/ARM_CM4F/port.c"
+  "$ENV{FREERTOS_KERNEL_PATH}/queue.c"
+  "$ENV{FREERTOS_KERNEL_PATH}/tasks.c"
+  "$ENV{FREERTOS_KERNEL_PATH}/timers.c"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/startup.c"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/startup_S32K148.S"
   "${BOOTLOADER_PATH}/AN12218_S32K148_Example_App/Example_app/Project_Settings/Startup_Code/system_S32K148.c"
@@ -88,6 +92,9 @@ target_link_options(
   "-Wl,-Map=$<TARGET_FILE_DIR:dc33_fw_s32k148>/dc33_fw_s32k148.map"
   --entry=Reset_Handler
   -T "${CMAKE_CURRENT_SOURCE_DIR}/main.ld"
+  -Wl,--defsym=PendSV_Handler=xPortPendSVHandler
+  -Wl,--defsym=SVC_Handler=vPortSVCHandler
+  -Wl,--defsym=SysTick_Handler=xPortSysTickHandler
   -Wl,-gc-sections
   -mcpu=cortex-m4
   -mfloat-abi=hard

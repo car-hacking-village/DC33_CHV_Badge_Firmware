@@ -37,6 +37,7 @@
 #include <device_registers.h>
 #include <led.h>
 #include <spi.h>
+#include <task.h>
 
 #include "./LPSPI.h"
 #include "./LPUART.h"
@@ -84,16 +85,8 @@ static void remote_leds(uint32_t leds) {
     spi_transmit_message(&message);
 }
 
-int main(void) {
-    SlowRUNmode_48MHz();
-    PORT_init();
-
-    LPUART1_init();
-    LPSPI0_init_master();
-
-    // Clear any partial messages before reset
-    LPSPI0_transmit_8bits(0x7E);
-    (void)LPSPI0_receive_8bits();
+static void led_control(void* param) {
+    (void)param;
 
     // Flash LEDs (init sequence)
     leds_on(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
@@ -249,4 +242,26 @@ int main(void) {
             }
         }
     }
+}
+
+static inline void start_led_control(void) {
+    static StackType_t stack[configMINIMAL_STACK_SIZE * 2];
+    static StaticTask_t task;
+    (void)xTaskCreateStatic(led_control, "led_control", sizeof(stack) / sizeof(*stack), NULL, 5, stack, &task);
+}
+
+int main(void) {
+    SlowRUNmode_48MHz();
+    PORT_init();
+
+    LPUART1_init();
+    LPSPI0_init_master();
+
+    // Clear any partial messages before reset
+    LPSPI0_transmit_8bits(0x7E);
+    (void)LPSPI0_receive_8bits();
+
+    start_led_control();
+    vTaskStartScheduler();
+    for (;;) { }
 }

@@ -32,6 +32,7 @@ stdenv.mkDerivation {
     export FW_COMMON_SRC=${../common}
     export BOOTLOADER_PATH=${vendor.bootloader}
     export COOKBOOK_PATH=${vendor.s32k148_cookbook}
+    export FREERTOS_KERNEL_PATH=${vendor.FreeRTOS-Kernel}
     export PROTOBUF_C_PATH=${vendor.protobuf-c}
   '';
 }

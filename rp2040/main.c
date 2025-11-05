@@ -107,6 +107,12 @@ static void usb_reader(void* param) {
     (void)param;
     for (;;) {
         tud_task();
+        tud_cdc_write_flush();
+        if (tud_suspended() || !tud_connected()) {
+            vTaskDelay(portTICK_PERIOD_MS);
+        } else if (!tud_task_event_ready()) {
+            vTaskDelay(1);
+        }
     }
 }
 
@@ -120,7 +126,7 @@ void tud_cdc_rx_cb(uint8_t itf) {
 static inline void start_usb_reader(void) {
     static StackType_t stack[configMINIMAL_STACK_SIZE * 2];
     static StaticTask_t task;
-    (void)xTaskCreateStatic(usb_reader, "usb_reader", sizeof(stack) / sizeof(*stack), NULL, 5, stack, &task);
+    (void)xTaskCreateStatic(usb_reader, "usb_reader", sizeof(stack) / sizeof(*stack), NULL, configMAX_PRIORITIES - 1, stack, &task);
 }
 
 static void uart_flasher(void* param) {
@@ -145,7 +151,6 @@ static void uart_reader(void* param) {
         uint8_t byte;
         uart_read_blocking(uart1, &byte, 1);
         tud_cdc_n_write(0, &byte, 1);
-        tud_cdc_n_write_flush(0);
     }
 }
 
@@ -184,8 +189,7 @@ int main(void) {
     start_message_handler();
     start_cdc_queue();
     start_usb_reader();
-    start_uart_flasher();
-    start_uart_reader();
+    start_usb_menu();
 
     vTaskStartScheduler();
     for (;;) { }

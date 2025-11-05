@@ -65,7 +65,7 @@ void spi_cb_transmit_byte(uint8_t byte) {
     (void)LPSPI0_receive_8bits();
 }
 
-__attribute__((noreturn)) static void sw_reset(void) {
+__attribute__((noreturn)) static inline void sw_reset(void) {
     S32_SCB->AIRCR = S32_SCB_AIRCR_VECTKEY(0x5FA) | S32_SCB_AIRCR_SYSRESETREQ_MASK;
     for (;;) { }
 }
@@ -75,7 +75,26 @@ static void delay(size_t ticks) {
     }
 }
 
-static void remote_leds(uint32_t leds) {
+static void uart_reader(void* param) {
+    (void)param;
+    for (;;) {
+        if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
+            // TODO: start an SPI transfer
+            char c = LPUART1_receive_char();
+            if (c == 'B') {
+                sw_reset();
+            }
+        }
+    }
+}
+
+static inline void start_uart_reader(void) {
+    static StackType_t stack[configMINIMAL_STACK_SIZE * 2];
+    static StaticTask_t task;
+    (void)xTaskCreateStatic(uart_reader, "uart_reader", sizeof(stack) / sizeof(*stack), NULL, 4, stack, &task);
+}
+
+static inline void remote_leds(uint32_t leds) {
     LedControl led_control = LED_CONTROL__INIT;
     led_control.leds_case = LED_CONTROL__LEDS_SET_LEDS;
     led_control.set_leds = leds;
@@ -103,13 +122,6 @@ static void led_control(void* param) {
 
     // Flash LEDs (four pattern loop)
     for (size_t tick = 0;; tick++) {
-        if (LPUART1->STAT & LPUART_STAT_RDRF_MASK) {
-            // TODO: start an SPI transfer
-            char c = LPUART1_receive_char();
-            if (c == 'B') {
-                sw_reset();
-            }
-        }
         if ((tick & 0x0007FFFF) == 1) {
             switch ((tick & 0x06000000) >> 25) {
             case 0:
@@ -247,7 +259,7 @@ static void led_control(void* param) {
 static inline void start_led_control(void) {
     static StackType_t stack[configMINIMAL_STACK_SIZE * 2];
     static StaticTask_t task;
-    (void)xTaskCreateStatic(led_control, "led_control", sizeof(stack) / sizeof(*stack), NULL, 5, stack, &task);
+    (void)xTaskCreateStatic(led_control, "led_control", sizeof(stack) / sizeof(*stack), NULL, 4, stack, &task);
 }
 
 int main(void) {
@@ -261,6 +273,7 @@ int main(void) {
     LPSPI0_transmit_8bits(0x7E);
     (void)LPSPI0_receive_8bits();
 
+    start_uart_reader();
     start_led_control();
     vTaskStartScheduler();
     for (;;) { }

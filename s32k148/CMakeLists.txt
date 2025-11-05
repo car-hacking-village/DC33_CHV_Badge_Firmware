@@ -65,7 +65,7 @@ target_compile_options(
   -mthumb
   -specs=nosys.specs
   $<$<COMPILE_LANGUAGE:ASM>:-x assembler-with-cpp>
-  $<$<COMPILE_LANGUAGE:C>:-std=gnu99>
+  $<$<COMPILE_LANGUAGE:C>:-std=gnu23>
   $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++23>
 )
 target_compile_options(
@@ -92,9 +92,6 @@ target_link_options(
   "-Wl,-Map=$<TARGET_FILE_DIR:dc33_fw_s32k148>/dc33_fw_s32k148.map"
   --entry=Reset_Handler
   -T "${CMAKE_CURRENT_SOURCE_DIR}/main.ld"
-  -Wl,--defsym=PendSV_Handler=xPortPendSVHandler
-  -Wl,--defsym=SVC_Handler=vPortSVCHandler
-  -Wl,--defsym=SysTick_Handler=xPortSysTickHandler
   -Wl,-gc-sections
   -mcpu=cortex-m4
   -mfloat-abi=hard

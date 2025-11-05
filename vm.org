@@ -1,0 +1,153 @@
+The original (v1.0 @ DEF CON) firmware toggled LEDs in a giant switch
+statement, with masks and volatile ints for delays. As one could
+imagine, this was very ugly, and also difficult to time. In addition, it
+made the binary very large.
+
+I've since implemented a simple VM based on (and partially compatible
+with) CHIP-8. This makes the firmware smaller, as well as sets up the
+path of dynamically changing the LED script (or maybe programming it to
+respond to CAN frames, etc).
+
+The following deviations have been made:
+
+- All registers (V0-V9, VA-VF) are 12-bit registers. This allows a full
+  register to describe four RGB LEDs.
+
+Re-implementing the original LED cycle in this way saved about 2-3KB on
+the firmware! (And that's an unoptimized script.)
+
+#+begin_example
+From CHIP-8:
+
+    1MMM: Go to 0MMM
+    BMMM: Go to 0MMM + V0
+    2MMM: Call 0MMM
+    00EE: Return
+    3XKK: Skip next instruction if VX == 0KK
+    4XKK: Skip next instruction if VX != 0KK
+    5XY0: Skip next instruction if VX == VY
+    9XY0: Skip next instruction if VX != VY
+    6XKK: Let VX = 0KK
+    CXKK: Let VX = rand() & 0KK
+    7XKK: Let VX += 0KK
+    8XY0: Let VX = VY
+    8XY1: Let VX |= VY
+    8XY2: Let VX &= VY
+    8XY4: Let VX += VY (VF overflow)
+    8XY5: Let VX -= VY (VF underflow)
+    FX07: Let VX = timer
+    FX15: Set timer = VX (01 = 1/60 second)
+
+
+Altered:
+
+    AKKK: Set LEDs to KKK
+    DXY0: Set LEDs to VX | VY
+
+
+New:
+    8XK3: Let VX = (VX << K) | (VX >> (12 - K))
+    0000: Effeciently sleep until timer zero
+#+end_example
+
+#+begin_example
+; main (200)
+200: 120C ; goto init;
+202: 1224 ; goto cycle_1;
+204: 124C ; goto cycle_2;
+206: 126E ; goto cycle_3;
+208: 128C ; goto cycle_4;
+20A: 1202 ; goto main+2;
+
+; init (20C)
+20C: 6007 ; V0 = 0x007;
+20E: 613C ; V1 = 60;
+210: 6204 ; V2 = 4;
+212: 6301 ; V3 = 1;
+214: 4200 ; if (V2 == 0)
+216: 1202 ; goto main+2;
+218: 8093 ; V0 <<= 9;
+21A: D000 ; set_leds(V0);
+21C: F115 ; set_timer(V1);
+21E: 0000 ; sleep();
+220: 8235 ; V2 -= V3;
+222: 1214 ; goto init+8;
+
+; cycle_1 (224)
+224: 6002 ; V0 = 2;
+226: 8083 ; V0 <<= 8;
+228: 6149 ; V1 = 0x49;
+22A: 8011 ; V0 |= V1;
+22C: 611E ; V1 = 30;
+22E: 6210 ; V2 = 10;
+230: 6301 ; V3 = 1;
+232: 4200 ; if (V2 == 0)
+234: 1204 ; goto main+4;
+236: 80B3 ; V0 >>= 1;
+238: D000 ; set_leds(V0);
+23A: F115 ; set_timer(V1);
+23C: 0000 ; sleep();
+23E: 8400 ; V4 = V0;
+240: 84B3 ; V4 >>= 1;
+242: D040 ; set_leds(V0 | V4);
+244: F115 ; set_timer(V1);
+246: 0000 ; sleep();
+248: 8235 ; V2 -= V3;
+24A: 1232 ; goto cycle_1+14;
+
+; cycle_2 (24C)
+24C: 60FF ; V0 = 0xFF;
+24E: 8083 ; V0 <<= 8;
+250: 61FF ; V1 = 0xFF;
+252: 8011 ; V0 |= V1;
+254: 611E ; V1 = 30;
+256: 6210 ; V2 = 10;
+258: 6301 ; V3 = 1;
+25A: 6400 ; V4 = 0;
+25C: 4200 ; if (V2 == 0)
+25E: 1206 ; goto main+6;
+260: D000 ; set_leds(V0);
+262: F115 ; set_timer(V1);
+264: 0000 ; sleep();
+266: D440 ; set_leds(V4);
+268: F115 ; set_timer(V1);
+26A: 0000 ; sleep();
+26C: 8235 ; V2 -= V3;
+26E: 125C ; goto cycle_2+16;
+
+; cycle_3 (270)
+270: 6007 ; V0 = 7;
+272: 8063 ; V0 <<= 6;
+274: 6107 ; V1 = 7;
+276: 8011 ; V0 |= V1;
+278: 610E ; V1 = 15;
+27A: 6240 ; V2 = 64;
+27C: 6301 ; V3 = 1;
+27E: 4200 ; if (V2 == 0)
+280: 1208 ; goto main+8;
+282: 8033 ; V0 <<= 3;
+284: D000 ; set_leds(V0);
+286: F115 ; set_timer(V1);
+288: 0000 ; sleep();
+28A: 8235 ; V2 -= V3;
+28C: 127E ; goto cycle_3+14;
+
+; cycle_4 (28E)
+28E: 6001 ; V0 = 0x001;
+290: 610E ; V1 = 15;
+292: 6220 ; V2 = 32;
+294: 6301 ; V3 = 1;
+296: 4200 ; if (V2 == 0)
+298: 120A ; goto main+10;
+29A: 80B3 ; V0 >>= 1;
+29C: D000 ; set_leds(V0);
+29E: F115 ; set_timer(V1);
+2A0: 0000 ; sleep();
+2A2: 8400 ; V4 = V0;
+2A4: 84B3 ; V4 >>= 1;
+2A6: D040 ; set_leds(V0 | V4);
+2A8: F115 ; set_timer(V1);
+2AA: 0000 ; sleep();
+2AC: 8235 ; V2 -= V3;
+2AE: 1296 ; goto cycle_4+8;
+#+end_example

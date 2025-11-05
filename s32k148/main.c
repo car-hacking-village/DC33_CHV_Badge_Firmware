@@ -43,6 +43,7 @@
 #include "./LPUART.h"
 #include "./clocks_and_modes.h"
 #include "./leds.h"
+#include "./script.h"
 
 static void PORT_init(void) {
     PCC->PCCn[PCC_PORTB_INDEX] |= PCC_PCCn_CGC_MASK;  // Enable clock for PORTB
@@ -104,154 +105,169 @@ static inline void remote_leds(uint32_t leds) {
     spi_transmit_message(&message);
 }
 
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName) {
+    (void)xTask;
+    (void)pcTaskName;
+    leds_off(0xFFF);
+    leds_on(FRED_LEFT_R | FRED_RIGHT_R);
+    remote_leds(DINO_LEFT_R_P | DINO_RIGHT_R_P);
+    for (;;) { }
+}
+
+struct registers {
+    uint16_t registers[16];
+    uint16_t instruction;
+    uint16_t timer;
+};
+
+static inline void set_leds(uint16_t leds) {
+    leds_off(0xFFF);
+    leds_on(((leds & 0x800) >> 3) | ((leds & 0x600) >> 9) | ((leds & 0x1C0) << 3));
+    remote_leds(leds & 0x3F);
+}
+
+__attribute__((noreturn)) static inline void invalid_op(void) {
+    leds_off(0xFFF);
+    leds_on(FRED_LEFT_R | FRED_RIGHT_R);
+    remote_leds(DINO_LEFT_R_P | DINO_RIGHT_R_P);
+    vTaskDelay(portMAX_DELAY);
+    for (;;) { }
+}
+
 static void led_control(void* param) {
     (void)param;
-
-    // Flash LEDs (init sequence)
-    leds_on(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
-    delay(5000000);
-    leds_off(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
-    leds_on(FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
-    delay(5000000);
-    leds_off(FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
-    remote_leds(DINO_LEFT_R_P | DINO_LEFT_G_P | DINO_LEFT_B_P);
-    delay(5000000);
-    remote_leds(DINO_RIGHT_R_P | DINO_RIGHT_G_P | DINO_RIGHT_B_P);
-    delay(5000000);
-    remote_leds(0);
-
-    // Flash LEDs (four pattern loop)
-    for (size_t tick = 0;; tick++) {
-        if ((tick & 0x0007FFFF) == 1) {
-            switch ((tick & 0x06000000) >> 25) {
+    struct registers data;
+    for (int i = 0; i < 16; i++) {
+        data.registers[i] = i;
+    }
+    data.instruction = 0x200;
+    data.timer = 0;
+    for (;;) {
+        uint16_t ip = data.instruction - 0x200;
+        if (ip >= sizeof(script)) {
+            invalid_op();
+        }
+        data.instruction += 2;
+        uint16_t op = script[ip >> 1];
+        switch (op >> 12) {
+        case 0:
+            switch (op) {
             case 0:
-                switch (((tick & 0xFFF00000) >> 20) % 6) {
-                case 0:
-                    leds_on(FRED_LEFT_R | FRED_RIGHT_R | FRED_LEFT_B | FRED_RIGHT_B);
-                    remote_leds(DINO_LEFT_R_P | DINO_RIGHT_R_P | DINO_LEFT_B_P | DINO_RIGHT_B_P);
-                    break;
-                case 1:
-                    leds_off(FRED_LEFT_B | FRED_RIGHT_B);
-                    remote_leds(DINO_LEFT_R_P | DINO_RIGHT_R_P);
-                    break;
-                case 2:
-                    leds_on(FRED_LEFT_G | FRED_RIGHT_G);
-                    remote_leds(DINO_LEFT_R_P | DINO_RIGHT_R_P | DINO_LEFT_G_P | DINO_RIGHT_G_P);
-                    break;
-                case 3:
-                    leds_off(FRED_LEFT_R | FRED_RIGHT_R);
-                    remote_leds(DINO_LEFT_G_P | DINO_RIGHT_G_P);
-                    break;
-                case 4:
-                    leds_on(FRED_LEFT_B | FRED_RIGHT_B);
-                    remote_leds(DINO_LEFT_G_P | DINO_RIGHT_G_P | DINO_LEFT_B_P | DINO_RIGHT_B_P);
-                    break;
-                case 5:
-                    leds_off(FRED_LEFT_G | FRED_RIGHT_G);
-                    remote_leds(DINO_LEFT_B_P | DINO_RIGHT_B_P);
-                    break;
-                }
+                vTaskDelay(portTICK_PERIOD_MS * 17 * data.timer);
+                break;
+            default:
+                invalid_op();
+            }
+            break;
+        case 1:
+            data.instruction = op & 0xFFF;
+            break;
+        case 3: {
+            uint8_t lhs = (op >> 8) & 0xF;
+            uint16_t rhs = op & 0xFF;
+            if (data.registers[lhs] == rhs) {
+                data.instruction += 2;
+            }
+            break;
+        }
+        case 4: {
+            uint8_t lhs = (op >> 8) & 0xF;
+            uint16_t rhs = op & 0xFF;
+            if (data.registers[lhs] != rhs) {
+                data.instruction += 2;
+            }
+            break;
+        }
+        case 5: {
+            uint8_t lhs = (op >> 8) & 0xF;
+            uint8_t rhs = (op >> 4) & 0xF;
+            if (data.registers[lhs] == data.registers[rhs]) {
+                data.instruction += 2;
+            }
+            break;
+        }
+        case 6: {
+            uint8_t lhs = (op >> 8) & 0xF;
+            uint16_t rhs = op & 0xFF;
+            data.registers[lhs] = rhs;
+            break;
+        }
+        case 7: {
+            uint8_t lhs = (op >> 8) & 0xF;
+            uint16_t rhs = op & 0xFF;
+            data.registers[lhs] += rhs;
+            break;
+        }
+        case 8: {
+            uint8_t lhs = (op >> 8) & 0xF;
+            uint8_t rhs = (op >> 4) & 0xF;
+            uint8_t sub_op = op & 0xF;
+            switch (sub_op) {
+            case 0:
+                data.registers[lhs] = data.registers[rhs];
                 break;
             case 1:
-                if (tick & 0x00100000) {
-                    leds_on(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B | FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
-                    remote_leds(DINO_LEFT_R_P | DINO_LEFT_G_P | DINO_LEFT_B_P | DINO_RIGHT_R_P | DINO_RIGHT_G_P | DINO_RIGHT_B_P);
-                } else {
-                    leds_off(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B | FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
-                    remote_leds(0);
-                }
+                data.registers[lhs] |= data.registers[rhs];
                 break;
             case 2:
-                if (tick & 0x00080000) {
-                    leds_on(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
-                    leds_off(FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
-                    remote_leds(DINO_LEFT_R_P | DINO_LEFT_G_P | DINO_LEFT_B_P);
-                } else {
-                    leds_on(FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
-                    leds_off(FRED_LEFT_R | FRED_LEFT_G | FRED_LEFT_B);
-                    remote_leds(DINO_RIGHT_R_P | DINO_RIGHT_G_P | DINO_RIGHT_B_P);
-                }
+                data.registers[lhs] &= data.registers[rhs];
                 break;
             case 3:
-                switch (((tick & 0xFFF80000) >> 19) % 24) {
-                case 0:
-                    leds_on(FRED_LEFT_R);
-                    leds_off(FRED_LEFT_G | FRED_LEFT_B | FRED_RIGHT_R | FRED_RIGHT_G | FRED_RIGHT_B);
-                    remote_leds(0);
-                    break;
-                case 1:
-                    leds_on(FRED_LEFT_G);
-                    break;
-                case 2:
-                    leds_off(FRED_LEFT_R);
-                    break;
-                case 3:
-                    leds_on(FRED_LEFT_B);
-                    break;
-                case 4:
-                    leds_off(FRED_LEFT_G);
-                    break;
-                case 5:
-                    leds_on(FRED_RIGHT_R);
-                    break;
-                case 6:
-                    leds_off(FRED_LEFT_B);
-                    break;
-                case 7:
-                    leds_on(FRED_RIGHT_G);
-                    break;
-                case 8:
-                    leds_off(FRED_RIGHT_R);
-                    break;
-                case 9:
-                    leds_on(FRED_RIGHT_B);
-                    break;
-                case 10:
-                    leds_off(FRED_RIGHT_G);
-                    break;
-                case 11:
-                    remote_leds(DINO_LEFT_R_P);
-                    break;
-                case 12:
-                    leds_off(FRED_RIGHT_B);
-                    break;
-                case 13:
-                    remote_leds(DINO_LEFT_R_P | DINO_LEFT_G_P);
-                    break;
-                case 14:
-                    remote_leds(DINO_LEFT_G_P);
-                    break;
-                case 15:
-                    remote_leds(DINO_LEFT_G_P | DINO_LEFT_B_P);
-                    break;
-                case 16:
-                    remote_leds(DINO_LEFT_B_P);
-                    break;
-                case 17:
-                    remote_leds(DINO_LEFT_B_P | DINO_RIGHT_R_P);
-                    break;
-                case 18:
-                    remote_leds(DINO_RIGHT_R_P);
-                    break;
-                case 19:
-                    remote_leds(DINO_RIGHT_R_P | DINO_RIGHT_G_P);
-                    break;
-                case 20:
-                    remote_leds(DINO_RIGHT_G_P);
-                    break;
-                case 21:
-                    remote_leds(DINO_RIGHT_G_P | DINO_RIGHT_B_P);
-                    break;
-                case 22:
-                    remote_leds(DINO_RIGHT_B_P);
-                    break;
-                case 23:
-                    leds_on(FRED_LEFT_R);
-                    remote_leds(DINO_RIGHT_B_P);
-                    break;
-                }
+                data.registers[lhs] = ((data.registers[lhs] << rhs) | (data.registers[lhs] >> (12 - rhs))) & 0xFFF;
                 break;
+            case 4:
+                data.registers[lhs] += data.registers[rhs];
+                data.registers[15] = (data.registers[lhs] >> 12) ? 1 : 0;
+                data.registers[lhs] &= 0xFFF;
+                break;
+            case 5:
+                data.registers[lhs] -= data.registers[rhs];
+                data.registers[15] = (data.registers[lhs] >> 12) ? 1 : 0;
+                data.registers[lhs] &= 0xFFF;
+                break;
+            default:
+                invalid_op();
             }
+            break;
+        }
+        case 9: {
+            uint8_t lhs = (op >> 8) & 0xF;
+            uint8_t rhs = (op >> 4) & 0xF;
+            if (data.registers[lhs] != data.registers[rhs]) {
+                data.instruction += 2;
+            }
+            break;
+        }
+        case 10:
+            set_leds(op & 0xFFF);
+            break;
+        case 11:
+            data.instruction = (op & 0xFFF) + data.registers[0];
+            break;
+        case 12:
+            break;  // TODO
+        case 13: {
+            uint8_t lhs = (op >> 8) & 0xF;
+            uint8_t rhs = (op >> 4) & 0xF;
+            set_leds(data.registers[lhs] | data.registers[rhs]);
+            break;
+        }
+        case 15: {
+            uint8_t lhs = (op >> 8) & 0xF;
+            uint8_t sub_op = op & 0xFF;
+            switch (sub_op) {
+            case 7:
+                break;  // TODO
+            case 21:
+                data.timer = data.registers[lhs];
+                break;
+            default:
+                invalid_op();
+            }
+            break;
+        }
+        default:
+            invalid_op();
         }
     }
 }
